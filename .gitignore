@@ -1,1 +1,18 @@
 node_modules/
+
+# Logs del servidor de desarrollo
+*.log
+npm-debug.log*
+
+# Cache de herramientas
+.vite/
+.cache/
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Nota: dist/ se mantiene versionado a proposito. Si el despliegue pasa a
+# construir desde el codigo fuente, conviene dejar de versionarlo.
