@@ -184,7 +184,6 @@ body {
 .pill-v1 { background: var(--golfina-bg);  color: var(--golfina); border: 1px solid var(--golfina-border); }
 .pill-v2 { background: rgba(255,209,102,0.06);   color: var(--warn);    border: 1px solid var(--warn-border); }
 .pill-v3 { background: var(--prieta-bg);   color: var(--prieta);  border: 1px solid var(--prieta-border); }
-.pill-v4 { background: var(--laud-bg);     color: var(--laud);    border: 1px solid var(--laud-border); }
 
 /* ── Sidebar ────────────────────────────────────────────────── */
 .sidebar {
