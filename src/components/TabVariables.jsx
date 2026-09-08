@@ -9,36 +9,24 @@ const VARS = [
     label: "V1 — Tasa de Eclosión del Corral Completo",
     color: "#2dce89", objetivo: "MAXIMIZAR",
     desc: "Tasa media estimada sobre TODOS los nidos del corral (nuevos + previos activos). " +
-          "Cada nido aporta: tasa_promedio_e + (tasa_max_e − tasa_promedio_e) × factor_prof × factor_sep. " +
-          "Los factores usan prof_opt, sigma y sep_min del CSV. El AG sube esta tasa colocando " +
-          "los nuevos nidos sin agravar la separación de los ya sembrados.",
+          "Cada nido aporta en función de la profundidad y de la separación óptima. " +
+          "El AG maximiza esta tasa colocando los nuevos nidos en la profundidad de 45 cm y respetando la separación.",
     alcanceCorralCompleto: true,
   },
   {
-    key: "v2_mejor", promKey: null,
-    label: "V2 — Mezcla de Especies fuera de Zona",
-    color: "#f5365c", objetivo: "MINIMIZAR",
-    desc: "Proporción de nidos NUEVOS colocados fuera de su zona asignada (zona proporcional al conteo de nidos). " +
-          "V2 = nidos_fuera / total_nidos_nuevos ∈ [0, 1].",
-    alcanceCorralCompleto: false,
+    key: "v2_mejor", promKey: "v2_promedio",
+    label: "V2 — Violaciones de Separación Mínima (100 cm)",
+    color: "#ffbe0b", objetivo: "MINIMIZAR",
+    desc: "Proporción de pares de nidos de Golfina (nuevo-nuevo y nuevo-previo) que violan la separación mínima de 100 cm. " +
+          "V2 = pares_violadores / total_pares ∈ [0, 1].",
+    alcanceCorralCompleto: true,
   },
   {
     key: "v3_mejor", promKey: "v3_promedio",
-    label: "V3 — Violaciones de Separación Mínima",
-    color: "#ffbe0b", objetivo: "MINIMIZAR",
-    desc: "Proporción de pares de la misma especie que violan sep_min del CSV. " +
-          "Pares contados: nuevo-nuevo y nuevo-previo. " +
-          "sep_min: golfina=100 cm, prieta=120 cm, laúd=150 cm. " +
-          "V3 = pares_violadores / total_pares ∈ [0, 1].",
-    alcanceCorralCompleto: true,
-  },
-  {
-    key: "v4_mejor", promKey: null,
-    label: "V4 — Desviación de Profundidad",
+    label: "V3 — Desviación de Profundidad",
     color: "#4b9cf5", objetivo: "MINIMIZAR",
-    desc: "Desviación normalizada de profundidad de nidos NUEVOS respecto al prof_opt del CSV. " +
-          "Por nido i: desv_i = |prof_i − prof_opt_e| / (prof_max_e − prof_min_e). " +
-          "V4 = media(desv_i) ∈ [0, 1].",
+    desc: "Desviación normalizada de la profundidad de los nidos NUEVOS respecto a la profundidad óptima de 45 cm. " +
+          "V3 = media(|prof_i − 45|) / (70 − 30) ∈ [0, 1].",
     alcanceCorralCompleto: false,
   },
 ];
@@ -104,7 +92,7 @@ function VarCard({ v, historial, nPrevios }) {
                 background: "rgba(255,190,11,0.12)", color: "var(--warn)",
                 border: "1px solid rgba(255,190,11,0.3)",
               }}>
-                ✦ incluye {nPrevios} nidos previos
+                ✦ incluye {nPrevios} nidos previos/descanso
               </span>
             )}
           </div>
@@ -185,14 +173,14 @@ export default function TabVariables({ historial, nPrevios = 0 }) {
         {nPrevios > 0 ? (
           <>
             <strong style={{ color: "var(--warn)" }}>
-              V1 y V3 evalúan el corral completo ({nPrevios} nidos previos ya estaban en el corral al inicio).
+              V1 y V2 evalúan el corral completo ({nPrevios} nidos previos o en descanso ya estaban en el corral al inicio).
             </strong>{" "}
             La línea de Gen 0 ya incluye el efecto de los nidos previos sobre la tasa de eclosión
-            y las violaciones de separación. El AG mejora V1 y V3 colocando los nidos nuevos
+            y las violaciones de separación. El AG mejora V1 y V2 colocando los nidos nuevos
             sin agravar la situación de los ya sembrados.
           </>
         ) : (
-          "V2 y V4 evalúan solo los nidos nuevos de esta jornada. V1 y V3 evalúan todos los nidos del corral."
+          "V3 evalúa solo los nidos nuevos de esta jornada. V1 y V2 evalúan todos los nidos del corral."
         )}
       </div>
 

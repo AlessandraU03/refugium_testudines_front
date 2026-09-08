@@ -12,6 +12,19 @@ const ZONA_COLS = {
   laud:    { zona: "rgba(245,54,92,0.06)",    border: "rgba(245,54,92,0.25)"  },
 };
 
+const cmToM = (cm) => (cm * 0.01).toFixed(2);
+
+function obtenerSectorFisico(xCm, yCm) {
+  const xM = xCm * 0.01;
+  const yM = yCm * 0.01;
+  const colIdx = Math.min(Math.floor(xM / 2), 19);
+  const rowIdx = Math.min(Math.floor(yM / 2), 17);
+  const letras = "ABCDEFGHIJKLMNOPQRST";
+  const letra = letras[colIdx] || "?";
+  const numero = rowIdx + 1;
+  return `${letra}-${numero}`;
+}
+
 export default function TabTemporada({ temporada, corral }) {
   const [hover, setHover] = useState(null);
 
@@ -48,95 +61,94 @@ export default function TabTemporada({ temporada, corral }) {
   // Opacidad de nido según antigüedad (más reciente = más brillante)
   const opacidadJornada = (fecha) => {
     const idx = fechasOrdenadas.indexOf(fecha);
-    return 0.35 + (idx / Math.max(fechasOrdenadas.length - 1, 1)) * 0.6;
+    if (idx === -1) return 0.45;
+    return 0.35 + (idx / Math.max(fechasOrdenadas.length - 1, 1)) * 0.55;
   };
 
-  // Recopilar zonas únicas por jornada para el diagrama acumulado.
-  // Cada jornada puede tener zonas distintas (proporcionales a su conteo de nidos).
-  // Se leen de zonas_jornada que se guardó al momento de sembrar.
-  const zonasAcumuladas = []; // [{especie, xmin, xmax, ymin, ymax, fecha}]
+  // Recompilar zonas acumuladas históricas a partir de los nidos previos
+  const zonasAcumuladas = [];
   const zonasVistas = new Set();
-  fechasOrdenadas.forEach((fecha) => {
-    const jNidos = jornadasMap[fecha];
-    // Tomar las zonas del primer nido de cada especie (todas comparten las mismas)
-    const zonasPorEsp = {};
-    jNidos.forEach((n) => {
-      const zj = n.zonas_jornada || {};
-      const key = `zona_${n.especie}`;
-      if (zj[key] && !zonasPorEsp[n.especie]) {
-        zonasPorEsp[n.especie] = zj[key];
-      }
-    });
-    Object.entries(zonasPorEsp).forEach(([esp, lim]) => {
-      const uniq = `${fecha}-${esp}-${lim.xmin}-${lim.xmax}`;
-      if (!zonasVistas.has(uniq)) {
-        zonasVistas.add(uniq);
-        zonasAcumuladas.push({ especie: esp, fecha, ...lim });
-      }
-    });
+  nidos.forEach((n) => {
+    if (n.zonas_jornada) {
+      Object.entries(n.zonas_jornada).forEach(([nombre, lim]) => {
+        const key = `${n.fecha_siembra}-${lim.especie}-${lim.xmin}-${lim.ymin}`;
+        if (!zonasVistas.has(key)) {
+          zonasVistas.add(key);
+          zonasAcumuladas.push({ fecha: n.fecha_siembra, especie: lim.especie, ...lim });
+        }
+      });
+    }
   });
 
-  const pctOcupado = nidos.length > 0 ? Math.min((nidos.length / CAP) * 100, 100) : 0;
+  // Parámetros de cuadrícula de 2x2 metros
+  const lineasX = [];
+  for (let xM = 2; xM < 40; xM += 2) {
+    lineasX.push(xM * 100);
+  }
+  const lineasY = [];
+  for (let yM = 2; yM < 35; yM += 2) {
+    lineasY.push(yM * 100);
+  }
+  const letrasColumnas = "ABCDEFGHIJKLMNOPQRST".split("");
 
   return (
     <div>
-      {/* Stats acumulados */}
-      <div className="grid-4" style={{ marginBottom: 20 }}>
-        <div className="stat-box">
-          <div className="stat-val">{resumen.jornadas || 0}</div>
-          <div className="stat-lbl">Jornadas</div>
+      {/* Indicadores resumidos de capacidad */}
+      <div className="grid-4" style={{ marginBottom: 16 }}>
+        <div className="card text-center">
+          <div className="num-large" style={{ color: "var(--accent)" }}>{fechasOrdenadas.length}</div>
+          <div style={{ fontSize: 10, color: "var(--text3)", textTransform: "uppercase" }}>Jornadas</div>
         </div>
-        <div className="stat-box">
-          <div className="stat-val">{nidos.length}</div>
-          <div className="stat-lbl">Nidos Activos</div>
+        <div className="card text-center">
+          <div className="num-large">{nidos.filter(n => !n.eclosionado).length}</div>
+          <div style={{ fontSize: 10, color: "var(--text3)", textTransform: "uppercase" }}>Nidos Activos</div>
         </div>
-        <div className="stat-box">
-          <div className="stat-val"
-            style={{ color: pctOcupado > 80 ? "var(--laud)" : "var(--accent)" }}>
-            {pctOcupado.toFixed(1)}%
+        <div className="card text-center">
+          <div className="num-large" style={{ color: "var(--laud)" }}>
+            {((nidos.filter(n => !n.eclosionado).length / CAP) * 100).toFixed(1)}%
           </div>
-          <div className="stat-lbl">Capacidad Ocupada</div>
+          <div style={{ fontSize: 10, color: "var(--text3)", textTransform: "uppercase" }}>Capacidad Ocupada</div>
         </div>
-        <div className="stat-box">
-          <div className="stat-val">{CAP - nidos.length}</div>
-          <div className="stat-lbl">Espacios Libres</div>
+        <div className="card text-center">
+          <div className="num-large" style={{ color: "var(--golfina)" }}>
+            {Math.max(0, CAP - nidos.filter(n => !n.eclosionado).length)}
+          </div>
+          <div style={{ fontSize: 10, color: "var(--text3)", textTransform: "uppercase" }}>Espacios Libres</div>
         </div>
       </div>
 
-      {/* Barra de capacidad */}
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="card-title">Ocupación del Corral ({nidos.length} / {CAP} nidos)</div>
-        <div style={{ height: 14, background: "var(--bg3)", borderRadius: 7, overflow: "hidden", marginBottom: 8 }}>
+        <div className="card-title">Ocupación del Corral ({nidos.filter(n => !n.eclosionado).length} / {CAP} nidos)</div>
+        <div style={{ height: 10, background: "var(--bg3)", borderRadius: 5, overflow: "hidden" }}>
           <div style={{
-            width: `${pctOcupado}%`, height: "100%",
-            background: pctOcupado > 80
-              ? "linear-gradient(90deg,var(--warn),var(--laud))"
-              : "linear-gradient(90deg,var(--prieta),var(--accent))",
-            borderRadius: 7, transition: "width 0.5s",
+            width: `${Math.min((nidos.filter(n => !n.eclosionado).length / CAP) * 100, 100)}%`,
+            height: "100%", background: "var(--accent)", transition: "width 0.4s"
           }} />
         </div>
-        <div style={{
-          display: "flex", justifyContent: "space-between",
-          fontSize: 10, color: "var(--text3)", fontFamily: "var(--font-mono)",
-        }}>
-          <span>0</span>
-          <span>Cap. máx. simultánea: {CAP}</span>
-          <span>{CAP}</span>
-        </div>
         <div style={{ display: "flex", gap: 16, marginTop: 12, flexWrap: "wrap" }}>
-          {["golfina","prieta","laud"].map((esp) => {
-            const cnt = nidos.filter((n) => n.especie === esp).length;
-            if (!cnt) return null;
-            return (
-              <div key={esp} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLS[esp].fill }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
-                  <span className={`badge badge-${esp}`}>{esp}</span>
-                  <span style={{ color: "var(--text2)", marginLeft: 6 }}>{cnt} nidos</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLS.golfina.fill }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
+              <span className="badge badge-golfina">golfina</span>
+              <span style={{ color: "var(--text2)", marginLeft: 6 }}>
+                {nidos.filter((n) => !n.eclosionado).length} nidos activos
+              </span>
+            </span>
+          </div>
+          {nidos.some((n) => n.eclosionado) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ 
+                width: 10, height: 10, borderRadius: "50%", 
+                background: "#7f8c8d", border: "1px dashed #95a5a6" 
+              }} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
+                <span className="badge badge-sec" style={{ background: "#7f8c8d" }}>descanso</span>
+                <span style={{ color: "var(--text2)", marginLeft: 6 }}>
+                  {nidos.filter((n) => n.eclosionado).length} zonas en descanso
                 </span>
-              </div>
-            );
-          })}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -173,8 +185,62 @@ export default function TabTemporada({ temporada, corral }) {
             <div style={{ overflowX: "auto", background: "var(--bg3)" }}>
               <svg viewBox={`0 0 ${VW} ${VH+20}`} width="100%"
                 style={{ display: "block", minWidth: 480 }}>
+                
+                {/* Fondo */}
                 <rect x={PAD} y={PAD} width={VW-2*PAD} height={VH-2*PAD}
                   fill="#1a1f26" stroke="var(--border)" strokeWidth={2} rx={4} />
+
+                {/* Cuadrícula de 2x2 metros */}
+                {lineasX.map((xVal, idx) => (
+                  <line
+                    key={`gridx-${idx}`}
+                    x1={sx(xVal)} y1={PAD}
+                    x2={sx(xVal)} y2={VH - PAD}
+                    stroke="rgba(255,255,255,0.05)"
+                    strokeDasharray="2 3"
+                  />
+                ))}
+                {lineasY.map((yVal, idx) => (
+                  <line
+                    key={`gridy-${idx}`}
+                    x1={PAD} y1={sy(yVal)}
+                    x2={VW - PAD} y2={sy(yVal)}
+                    stroke="rgba(255,255,255,0.05)"
+                    strokeDasharray="2 3"
+                  />
+                ))}
+
+                {/* Letras de Columnas (A-T) arriba */}
+                {letrasColumnas.map((letra, idx) => (
+                  <text
+                    key={`letcol-${idx}`}
+                    x={sx(idx * 200 + 100)}
+                    y={PAD - 8}
+                    textAnchor="middle"
+                    fill="#5b6975"
+                    fontSize={9}
+                    fontFamily="var(--font-mono)"
+                    fontWeight="bold"
+                  >
+                    {letra}
+                  </text>
+                ))}
+
+                {/* Números de Filas (1-18) izquierda */}
+                {Array.from({ length: 18 }).map((_, idx) => (
+                  <text
+                    key={`numrow-${idx}`}
+                    x={PAD - 12}
+                    y={sy(idx * 200 + 100) + 3.5}
+                    textAnchor="end"
+                    fill="#5b6975"
+                    fontSize={9}
+                    fontFamily="var(--font-mono)"
+                    fontWeight="bold"
+                  >
+                    {idx + 1}
+                  </text>
+                ))}
 
                 {/* Zonas históricas de cada jornada (punteadas, tenues) */}
                 {zonasAcumuladas.map((z, idx) => {
@@ -215,10 +281,11 @@ export default function TabTemporada({ temporada, corral }) {
                   })
                 }
 
-                {/* Todos los nidos — coloreados por especie, brillo por antigüedad */}
+                {/* Todos los nidos (gris y punteado si eclosionó) */}
                 {nidos.map((n, idx) => {
-                  const c   = COLS[n.especie];
-                  const op  = opacidadJornada(n.fecha_siembra);
+                  const isEcl = n.eclosionado;
+                  const c   = isEcl ? { fill: "#7f8c8d", stroke: "#95a5a6" } : COLS[n.especie];
+                  const op  = isEcl ? 0.25 : opacidadJornada(n.fecha_siembra);
                   const isH = hover?.idx === idx;
                   return (
                     <g key={idx}
@@ -232,6 +299,7 @@ export default function TabTemporada({ temporada, corral }) {
                         fill={c.fill} opacity={isH ? 1 : op}
                         stroke={isH ? "#fff" : c.stroke}
                         strokeWidth={isH ? 2 : 0.5}
+                        strokeDasharray={isEcl ? "2 2" : "none"}
                         style={{ transition: "r 0.1s" }}
                       />
                     </g>
@@ -240,7 +308,7 @@ export default function TabTemporada({ temporada, corral }) {
 
                 <text x={VW/2} y={VH+12} textAnchor="middle"
                   fill="#484f58" fontSize={10} fontFamily="DM Mono">
-                  Largo (cm)  0 → {LARGO}
+                  Largo del Corral (Estacas A a T · Metros 0 → {cmToM(LARGO)}m)
                 </text>
               </svg>
             </div>
@@ -253,12 +321,16 @@ export default function TabTemporada({ temporada, corral }) {
               }}>
                 <span><span style={{ color: "var(--text2)" }}>Jornada: </span>
                   <span style={{ color: "var(--warn)" }}>{hover.fecha_siembra}</span></span>
+                <span>
+                  <span style={{ color: "var(--text2)" }}>Sector Físico: </span>
+                  <strong style={{ color: "var(--accent)" }}>{obtenerSectorFisico(hover.x, hover.y)}</strong>
+                </span>
                 <span><span style={{ color: "var(--text2)" }}>Especie: </span>
                   <span className={`badge badge-${hover.especie}`}>{hover.especie}</span></span>
-                <span><span style={{ color: "var(--text2)" }}>X: </span>{hover.x?.toFixed(1)} cm</span>
-                <span><span style={{ color: "var(--text2)" }}>Y: </span>{hover.y?.toFixed(1)} cm</span>
+                <span><span style={{ color: "var(--text2)" }}>X: </span>{cmToM(hover.x)} m</span>
+                <span><span style={{ color: "var(--text2)" }}>Y: </span>{cmToM(hover.y)} m</span>
                 <span><span style={{ color: "var(--text2)" }}>Prof.: </span>{hover.prof?.toFixed(1)} cm</span>
-                <span><span style={{ color: "var(--text2)" }}>Eclosión: </span>{hover.fecha_eclosion}</span>
+                <span><span style={{ color: "var(--text2)" }}>Eclosión: </span>{hover.fecha_eclosion} {hover.eclosionado ? "(Descanso Arena)" : ""}</span>
               </div>
             )}
           </div>
@@ -279,21 +351,23 @@ export default function TabTemporada({ temporada, corral }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {fechasOrdenadas.map((fecha) => {
-                    const jNidos = jornadasMap[fecha];
-                    const cG = jNidos.filter((n) => n.especie === "golfina").length;
-                    const cP = jNidos.filter((n) => n.especie === "prieta").length;
-                    const cL = jNidos.filter((n) => n.especie === "laud").length;
-                    const ultEcl = jNidos.reduce(
-                      (max, n) => n.fecha_eclosion > max ? n.fecha_eclosion : max, "");
+                  {fechasOrdenadas.map((f) => {
+                    const gps = jornadasMap[f];
+                    const g = gps.filter((n) => n.especie === "golfina").length;
+                    const p = gps.filter((n) => n.especie === "prieta").length;
+                    const l = gps.filter((n) => n.especie === "laud").length;
+                    const tot = gps.length;
+                    // Encontrar la fecha de eclosión más lejana
+                    const ecls = gps.map((n) => n.fecha_eclosion).sort();
+                    const maxEcl = ecls[ecls.length - 1];
                     return (
-                      <tr key={fecha}>
-                        <td style={{ fontFamily: "var(--font-mono)", color: "var(--warn)" }}>{fecha}</td>
-                        <td style={{ color: "var(--golfina)" }}>{cG}</td>
-                        <td style={{ color: "var(--prieta)" }}>{cP}</td>
-                        <td style={{ color: "var(--laud)" }}>{cL}</td>
-                        <td style={{ fontWeight: 600 }}>{jNidos.length}</td>
-                        <td style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>{ultEcl}</td>
+                      <tr key={f}>
+                        <td style={{ color: "var(--warn)", fontFamily: "var(--font-mono)", fontWeight: 700 }}>{f}</td>
+                        <td>{g}</td>
+                        <td>{p}</td>
+                        <td>{l}</td>
+                        <td style={{ fontWeight: 700 }}>{tot}</td>
+                        <td style={{ fontFamily: "var(--font-mono)" }}>{maxEcl}</td>
                       </tr>
                     );
                   })}

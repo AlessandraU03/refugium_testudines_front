@@ -8,8 +8,6 @@ export default function PanelEntradas({
 }) {
   const [form, setForm] = useState({
     n_golfina: "70",
-    n_prieta:  "25",
-    n_laud:    "5",
     fecha:     today,
   });
 
@@ -18,8 +16,8 @@ export default function PanelEntradas({
   const handleSubmit = () => {
     onEjecutar({
       n_golfina: Math.max(0, parseInt(form.n_golfina) || 0),
-      n_prieta:  Math.max(0, parseInt(form.n_prieta)  || 0),
-      n_laud:    Math.max(0, parseInt(form.n_laud)    || 0),
+      n_prieta:  0,
+      n_laud:    0,
       fecha:     form.fecha,
     });
   };
@@ -32,16 +30,8 @@ export default function PanelEntradas({
       <div className="panel-section">
         <div className="panel-label">Entradas de la Jornada</div>
         <div className="field">
-          <label><span className="dot-golfina">●</span> Nidos Golfina</label>
-          <input type="number" min="0" value={form.n_golfina} onChange={set("n_golfina")} />
-        </div>
-        <div className="field">
-          <label><span className="dot-prieta">●</span> Nidos Prieta</label>
-          <input type="number" min="0" value={form.n_prieta} onChange={set("n_prieta")} />
-        </div>
-        <div className="field">
-          <label><span className="dot-laud">●</span> Nidos Laúd</label>
-          <input type="number" min="0" value={form.n_laud} onChange={set("n_laud")} />
+          <label><span className="dot-golfina">●</span> Nidos de Golfina a Sembrar</label>
+          <input type="number" min="1" value={form.n_golfina} onChange={set("n_golfina")} />
         </div>
         <div className="field">
           <label>Fecha de la Jornada</label>
@@ -74,7 +64,7 @@ export default function PanelEntradas({
             <tr><th>Especie</th><th>P.Opt</th><th>Sep.Min</th></tr>
           </thead>
           <tbody>
-            {[["golfina","45cm","100cm"],["prieta","60cm","120cm"],["laud","70cm","150cm"]].map(([e,p,s]) => (
+            {[["golfina","45cm","100cm"]].map(([e,p,s]) => (
               <tr key={e}>
                 <td><span className={`badge badge-${e}`}>{e}</span></td>
                 <td style={{ fontFamily:"var(--font-mono)" }}>{p}</td>
@@ -94,8 +84,6 @@ export default function PanelEntradas({
               ["Jornadas",    res.jornadas],
               ["Total nidos", res.total_nidos],
               ["Golfina",     res.golfina],
-              ["Prieta",      res.prieta],
-              ["Laúd",        res.laud],
             ].map(([l, v]) => (
               <div key={l} className="stat-box" style={{ padding: "8px 10px" }}>
                 <div className="stat-val" style={{ fontSize: 16 }}>{v}</div>

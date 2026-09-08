@@ -1,11 +1,9 @@
 import { useState } from "react";
 
-const ESPECIES = ["golfina", "prieta", "laud"];
+const ESPECIES = ["golfina"];
 
 const COLORES = {
   golfina: "var(--golfina)",
-  prieta:  "var(--prieta)",
-  laud:    "var(--laud)",
 };
 
 function PorcentajeBarra({ valor, max = 1, color }) {
@@ -36,7 +34,7 @@ function TablaGenes({ genes }) {
           <div style={{ marginBottom: 6 }}>
             <span className={`badge badge-${esp}`}>{esp.charAt(0).toUpperCase() + esp.slice(1)}</span>
             <span style={{ color: "var(--text2)", fontSize: 11, marginLeft: 8 }}>
-              {porEspecie[esp].length} nidos
+              {porEspecie[esp].length} nidos sembrados en hileras
             </span>
           </div>
           <div className="tbl-wrap">
@@ -44,26 +42,31 @@ function TablaGenes({ genes }) {
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>X (cm)</th>
-                  <th>Y (cm)</th>
+                  <th>Sector</th>
+                  <th>X (m)</th>
+                  <th>Y (m)</th>
                   <th>Prof. (cm)</th>
-                  <th>Zona</th>
+                  <th>Proporción Sexual Estimada</th>
                 </tr>
               </thead>
               <tbody>
-                {porEspecie[esp].map((g) => (
-                  <tr key={g.id}>
-                    <td>{g.id}</td>
-                    <td>{g.x.toFixed(1)}</td>
-                    <td>{g.y.toFixed(1)}</td>
-                    <td style={{ color: COLORES[esp] }}>{g.prof.toFixed(1)}</td>
-                    <td>
-                      <span className={`badge badge-${esp}`} style={{ fontSize: 10 }}>
-                        zona_{esp}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {porEspecie[esp].map((g) => {
+                  const ps = g.proporcion_sexual || { pct_machos: 1.1, pct_hembras: 98.9, sesgo: "Feminizado" };
+                  return (
+                    <tr key={g.id}>
+                      <td style={{ fontWeight: 700 }}>#{g.id}</td>
+                      <td>
+                        <strong style={{ color: "var(--warn)" }}>{g.sector || "A-1"}</strong>
+                      </td>
+                      <td style={{ fontFamily: "var(--font-mono)" }}>{(g.x * 0.01).toFixed(2)}m</td>
+                      <td style={{ fontFamily: "var(--font-mono)" }}>{(g.y * 0.01).toFixed(2)}m</td>
+                      <td style={{ color: COLORES[esp], fontFamily: "var(--font-mono)", fontWeight: 600 }}>{g.prof.toFixed(1)} cm</td>
+                      <td style={{ fontSize: 11 }}>
+                        <span style={{ color: "var(--laud)", fontWeight: 600 }}>{ps.pct_hembras}% ♀</span> · <span style={{ color: "var(--prieta)", fontWeight: 600 }}>{ps.pct_machos}% ♂</span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -75,13 +78,15 @@ function TablaGenes({ genes }) {
 
 export default function TabTop3({ top3 }) {
   const [seleccionado, setSeleccionado] = useState(0);
-  const ind = top3[seleccionado];
+  const ind = top3 && top3.length > 0 ? top3[seleccionado] : null;
+
+  if (!ind) return null;
 
   return (
     <div>
       {/* Selector de individuo */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-        {top3.map((ind, i) => (
+        {top3.map((item, i) => (
           <button
             key={i}
             onClick={() => setSeleccionado(i)}
@@ -100,7 +105,7 @@ export default function TabTop3({ top3 }) {
               #{i + 1}
             </div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 16, color: "var(--text)", marginTop: 4 }}>
-              {ind.fitness.toFixed(4)}
+              {item.fitness.toFixed(4)}
             </div>
             <div style={{ fontSize: 10, color: "var(--text3)", marginTop: 2 }}>fitness</div>
           </button>
@@ -119,21 +124,15 @@ export default function TabTop3({ top3 }) {
           </div>
           <div>
             <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 4, fontFamily: "var(--font-mono)" }}>
-              V2 — Mezcla de Especies fuera de Zona (MINIMIZAR)
+              V2 — Violaciones de Separación Mínima (MINIMIZAR)
             </div>
-            <PorcentajeBarra valor={ind.v2} max={1} color="var(--laud)" />
+            <PorcentajeBarra valor={ind.v2} max={1} color="var(--warn)" />
           </div>
           <div>
             <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 4, fontFamily: "var(--font-mono)" }}>
-              V3 — Violaciones de Separación Mínima (MINIMIZAR)
+              V3 — Desviación de Profundidad respecto al Óptimo (MINIMIZAR)
             </div>
-            <PorcentajeBarra valor={ind.v3} max={1} color="var(--warn)" />
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: "var(--text2)", marginBottom: 4, fontFamily: "var(--font-mono)" }}>
-              V4 — Desviación de Profundidad respecto al Óptimo (MINIMIZAR)
-            </div>
-            <PorcentajeBarra valor={ind.v4} max={1} color="var(--prieta)" />
+            <PorcentajeBarra valor={ind.v3} max={1} color="var(--prieta)" />
           </div>
         </div>
       </div>
@@ -141,7 +140,7 @@ export default function TabTop3({ top3 }) {
       {/* Tabla de nidos por especie */}
       <div className="card">
         <div className="card-title">
-          Distribución de Nidos — Individuo #{seleccionado + 1}
+          Distribución de Nidos en Hileras — Individuo #{seleccionado + 1}
           <span style={{ color: "var(--text3)", fontWeight: 400, marginLeft: 8 }}>
             ({ind.genes.length} nidos totales)
           </span>
