@@ -10,6 +10,7 @@ import TabClustering from "./components/TabClustering";
 import TabTemporada from "./components/TabTemporada";
 import TabPTS from "./components/TabPTS";
 import TabCapacidad from "./components/TabCapacidad";
+import TabRecomendacion from "./components/TabRecomendacion";
 import turtleLogo from "./turtle_logo.png";
 import "./App.css";
 
@@ -21,6 +22,7 @@ const API_URL = window.location.hostname === "localhost" || window.location.host
 const TABS = [
   { id: "temporada",  label: "Estado Corral"       },
   { id: "capacidad",  label: "Capacidad"           },
+  { id: "recomendacion", label: "Recomendación"    },
   { id: "clustering", label: "Análisis IA (Densidad)" },
   { id: "corral",     label: "Diagrama Corral"     },
   { id: "evolucion",  label: "Evolución Aptitud"  },
@@ -170,6 +172,29 @@ export default function App() {
           {error && <div className="error-banner">⚠ {error}</div>}
 
           {/* Alerta biológica de calor por capacidad */}
+          {/* Aviso: la rejilla tuvo que apretarse porque no cabian los nidos */}
+          {resultado?.separacion?.comprimida && (
+            <div style={{
+              background: "rgba(251, 99, 64, 0.08)",
+              border: "1px solid rgba(251, 99, 64, 0.3)",
+              borderRadius: 10,
+              padding: "12px 20px",
+              marginBottom: 16,
+              fontSize: 12,
+              lineHeight: 1.6,
+              display: "flex",
+              alignItems: "center",
+              gap: 12
+            }}>
+              <span style={{ fontSize: 20 }}>📏</span>
+              <div>
+                <strong>Separación comprimida:</strong> {resultado.separacion.mensaje}{" "}
+                Se sembró a {resultado.separacion.efectiva_cm} cm en lugar de los{" "}
+                {resultado.separacion.norma_cm} cm documentados.
+              </div>
+            </div>
+          )}
+
           {((resultado?.alerta_calor?.activada) || (temporada?.alerta_calor?.activada)) && (
             <div style={{
               background: "rgba(245, 54, 92, 0.08)",
@@ -267,6 +292,7 @@ export default function App() {
 
                 {/* Tab: Capacidad (no requiere ejecutar el AG) */}
                 {tabActiva === "capacidad" && <TabCapacidad />}
+                {tabActiva === "recomendacion" && <TabRecomendacion />}
 
                 {/* Tab: Monitoreo PTS (Período Termosensible) */}
                 {tabActiva === "pts" && (

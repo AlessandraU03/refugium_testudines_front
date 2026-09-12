@@ -8,9 +8,9 @@ const VARS = [
     key: "v1_mejor", promKey: "v1_promedio",
     label: "V1 — Tasa de Eclosión del Corral Completo",
     color: "#2dce89", objetivo: "MAXIMIZAR",
-    desc: "Tasa media estimada sobre TODOS los nidos del corral (nuevos + previos activos). " +
-          "Cada nido aporta en función de la profundidad y de la separación óptima. " +
-          "El AG maximiza esta tasa colocando los nuevos nidos en la profundidad de 45 cm y respetando la separación.",
+    desc: "Tasa media estimada sobre TODOS los nidos del corral (nuevos + previos activos), " +
+          "en función de la profundidad y la separación. Es informativa: desde que el modelo " +
+          "térmico entró en operación, lo que la aptitud maximiza es el Índice de eclosión.",
     alcanceCorralCompleto: true,
   },
   {
@@ -19,6 +19,16 @@ const VARS = [
     color: "#ffbe0b", objetivo: "MINIMIZAR",
     desc: "Proporción de pares de nidos de Golfina (nuevo-nuevo y nuevo-previo) que violan la separación mínima de 100 cm. " +
           "V2 = pares_violadores / total_pares ∈ [0, 1].",
+    alcanceCorralCompleto: true,
+  },
+  {
+    key: "indice_mejor", promKey: "indice_promedio",
+    label: "Índice de eclosión — crías conservadas frente al hacinamiento",
+    color: "#b57bee", objetivo: "MAXIMIZAR",
+    desc: "Fracción de crías que sobrevive al apretujamiento de esta colocación, según la curva " +
+          "densidad-eclosión medida por Honarvar, O'Connor y Spotila (2008) en Oecologia. " +
+          "Vale 1.0 mientras ningún nido supere los 2 nidos/m² y baja conforme se apilan. " +
+          "Es el término que la aptitud maximiza.",
     alcanceCorralCompleto: true,
   },
   {
