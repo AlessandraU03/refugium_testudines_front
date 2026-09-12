@@ -13,7 +13,11 @@ const MESES = [
 const num = (n) => (n == null ? "—" : Number(n).toLocaleString("es-MX"));
 
 export default function TabRecomendacion() {
-  const [nidos, setNidos] = useState(767);
+  // Se guarda el texto tal cual se escribe. Si aqui viviera un numero, al
+  // borrar el campo el estado caia a 0, React no detectaba cambio al volver
+  // a teclear y el navegador conservaba el "0" delante: "0600".
+  const [nidosTexto, setNidosTexto] = useState("767");
+  const nidos = parseInt(nidosTexto, 10);
   const [corral, setCorral] = useState("1");
   const [mes, setMes] = useState(9);
 
@@ -23,7 +27,7 @@ export default function TabRecomendacion() {
   const [cargando, setCargando] = useState(false);
 
   const consultar = useCallback(() => {
-    if (!nidos || nidos <= 0) return;
+    if (!Number.isFinite(nidos) || nidos <= 0) return;
     setCargando(true);
     setErr(null);
     Promise.all([
@@ -68,8 +72,9 @@ export default function TabRecomendacion() {
           Nidos a alojar
           <br />
           <input
-            type="number" min="1" value={nidos}
-            onChange={(e) => setNidos(parseInt(e.target.value || "0", 10))}
+            type="number" min="1" value={nidosTexto}
+            onChange={(e) => setNidosTexto(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") consultar(); }}
             style={{ width: 110, marginTop: 4 }}
           />
         </label>
@@ -95,7 +100,8 @@ export default function TabRecomendacion() {
           </select>
         </label>
 
-        <button onClick={consultar} disabled={cargando}>
+        <button onClick={consultar}
+                disabled={cargando || !Number.isFinite(nidos) || nidos <= 0}>
           {cargando ? "Calculando…" : "Consultar"}
         </button>
       </div>
@@ -158,12 +164,13 @@ export default function TabRecomendacion() {
               <h3 style={{ fontSize: 14, marginBottom: 10 }}>
                 ¿Conviene apretarlos o dejar fuera el excedente?
               </h3>
-              <table className="tabla" style={{ width: "100%", fontSize: 13 }}>
+              <div className="tbl-wrap">
+              <table>
                 <thead>
                   <tr>
                     <th style={{ textAlign: "left" }}>Decisión</th>
-                    <th>Nidos alojados</th>
-                    <th>Crías esperadas</th>
+                    <th style={{ textAlign: "center" }}>Nidos alojados</th>
+                    <th style={{ textAlign: "center" }}>Crías esperadas</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -196,6 +203,7 @@ export default function TabRecomendacion() {
                   </tr>
                 </tbody>
               </table>
+              </div>
               <p style={{ fontSize: 11.5, color: "var(--text2)", marginTop: 8, lineHeight: 1.6 }}>
                 Diferencia: <strong>{num(comp.diferencia_crias)}</strong> crías a favor de{" "}
                 <strong>{comp.conviene === "apretar" ? "apretarlos" : "no apretarlos"}</strong>. El
@@ -213,14 +221,15 @@ export default function TabRecomendacion() {
               <h3 style={{ fontSize: 14, marginBottom: 10 }}>
                 Crías y proporción sexual en {MESES[mes - 1].toLowerCase()}
               </h3>
-              <table className="tabla" style={{ width: "100%", fontSize: 13 }}>
+              <div className="tbl-wrap">
+              <table>
                 <thead>
                   <tr>
                     <th style={{ textAlign: "left" }}>Escenario</th>
-                    <th>Crías totales</th>
-                    <th>Hembras</th>
-                    <th>Machos</th>
-                    <th>Margen letal</th>
+                    <th style={{ textAlign: "center" }}>Crías totales</th>
+                    <th style={{ textAlign: "center" }}>Hembras</th>
+                    <th style={{ textAlign: "center" }}>Machos</th>
+                    <th style={{ textAlign: "center" }}>Margen letal</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -243,6 +252,7 @@ export default function TabRecomendacion() {
                   </tr>
                 </tbody>
               </table>
+              </div>
               <p style={{ fontSize: 11.5, color: "var(--text2)", marginTop: 8, lineHeight: 1.6 }}>
                 La sombra no cambia el número de crías: cambia el sexo con el que nacen. El
                 hacinamiento y la sombra son palancas distintas para problemas distintos, porque el
