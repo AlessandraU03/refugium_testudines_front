@@ -13,6 +13,9 @@ const MES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct
 export default function TabCapacidad() {
   const [d, setD] = useState(null);
   const [err, setErr] = useState(null);
+  // "registro" = los nidos que el Santuario ya sembro con el sistema.
+  // "historico" = la temporada 2022 publicada, que sirve de referencia.
+  const [fuente, setFuente] = useState("registro");
 
   useEffect(() => {
     fetch(`${API}/api/capacidad`)
@@ -24,7 +27,11 @@ export default function TabCapacidad() {
   if (err) return <div className="error-banner">No se pudo calcular la capacidad: {err}</div>;
   if (!d) return <div className="empty-state"><p>Calculando capacidad…</p></div>;
 
-  const data = d.serie.map((p) => {
+  const hayRegistro = !!d.registro;
+  const usarRegistro = hayRegistro && fuente === "registro";
+  const act = usarRegistro ? d.registro : d;
+
+  const data = act.serie.map((p) => {
     const [, m, dd] = p.fecha.split("-");
     return {
       fecha: p.fecha,
@@ -36,12 +43,45 @@ export default function TabCapacidad() {
   });
 
   const idx = (f) => data.findIndex((p) => p.fecha === f);
-  const iIni = d.ventana_inicio ? idx(d.ventana_inicio) : -1;
-  const iFin = d.ventana_fin ? idx(d.ventana_fin) : -1;
-  const pct = (d.cobertura_del_pico * 100).toFixed(0);
+  const iIni = act.ventana_inicio ? idx(act.ventana_inicio) : -1;
+  const iFin = act.ventana_fin ? idx(act.ventana_fin) : -1;
+  const pct = (act.cobertura_del_pico * 100).toFixed(0);
+
+  const btn = (activo) => ({
+    padding: "6px 14px", fontSize: 12, cursor: "pointer",
+    borderRadius: 8, border: "1px solid var(--border)",
+    background: activo ? "rgba(32,227,178,0.14)" : "transparent",
+    color: activo ? "var(--accent)" : "var(--text2)",
+    fontWeight: activo ? 700 : 400,
+  });
 
   return (
     <div>
+      {hayRegistro ? (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14 }}>
+          <span style={{ fontSize: 11, color: "var(--text3)", marginRight: 4 }}>
+            Fuente de la curva:
+          </span>
+          <button style={btn(usarRegistro)} onClick={() => setFuente("registro")}>
+            Temporada en curso · {d.registro.nidos_sembrados} nidos sembrados
+          </button>
+          <button style={btn(!usarRegistro)} onClick={() => setFuente("historico")}>
+            Referencia {d.anio_datos} · {d.nidos_temporada} nidos
+          </button>
+        </div>
+      ) : (
+        <div style={{
+          background: "rgba(251,99,64,0.07)", border: "1px solid rgba(251,99,64,0.25)",
+          borderRadius: 10, padding: "10px 16px", marginBottom: 14,
+          fontSize: 12, color: "var(--text2)", lineHeight: 1.6,
+        }}>
+          Todavia no hay jornadas guardadas, asi que la curva es la de la temporada{" "}
+          {d.anio_datos} publicada en la literatura. Conforme se guarden jornadas con
+          <strong> Ejecutar AG</strong> y <strong>Guardar jornada</strong>, esta pestana
+          mostrara la ocupacion real del corral con las fechas exactas de cada siembra.
+        </div>
+      )}
+
       <div style={{
         background: "rgba(245,54,92,0.08)", border: "1px solid rgba(245,54,92,0.3)",
         borderRadius: 10, padding: "12px 18px", marginBottom: 16,
@@ -49,10 +89,15 @@ export default function TabCapacidad() {
       }}>
         <span style={{ fontSize: 20 }}>📐</span>
         <div style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>
-          La superficie instalada cubre el <strong style={{ color: "var(--laud)" }}>{pct} %</strong> de
-          la ocupación máxima de la temporada. Durante <strong>{d.dias_con_deficit} días</strong> del
-          año la densidad necesaria supera el límite de {d.densidad_max_nidos_m2} nido/m², lo que
-          implica sembrar a <strong>{d.separacion_en_pico_m} m</strong> de separación en lugar de 1.00 m.
+          {usarRegistro
+            ? <>Con los nidos sembrados hasta ahora, la superficie instalada cubre el{" "}
+                <strong style={{ color: "var(--laud)" }}>{pct} %</strong> de la ocupación máxima
+                alcanzada. Durante <strong>{act.dias_con_deficit} días</strong> la densidad
+                necesaria supera el límite de {d.densidad_max_nidos_m2} nido/m².</>
+            : <>La superficie instalada cubre el <strong style={{ color: "var(--laud)" }}>{pct} %</strong> de
+                la ocupación máxima de la temporada. Durante <strong>{act.dias_con_deficit} días</strong> del
+                año la densidad necesaria supera el límite de {d.densidad_max_nidos_m2} nido/m², lo que
+                implica sembrar a <strong>{act.separacion_en_pico_m} m</strong> de separación en lugar de 1.00 m.</>}
         </div>
       </div>
 
@@ -62,24 +107,26 @@ export default function TabCapacidad() {
           <div className="stat-lbl">Capacidad segura (nidos)</div>
         </div>
         <div className="stat-box">
-          <div className="stat-val" style={{ color: "var(--laud)" }}>{d.pico_ocupacion}</div>
+          <div className="stat-val" style={{ color: "var(--laud)" }}>{act.pico_ocupacion}</div>
           <div className="stat-lbl">Pico de ocupación</div>
         </div>
         <div className="stat-box">
-          <div className="stat-val" style={{ color: "var(--warn)" }}>{d.deficit_maximo}</div>
+          <div className="stat-val" style={{ color: "var(--warn)" }}>{act.deficit_maximo}</div>
           <div className="stat-lbl">Déficit máximo (nidos)</div>
         </div>
         <div className="stat-box">
-          <div className="stat-val">{d.area_faltante_m2}</div>
+          <div className="stat-val">{act.area_faltante_m2}</div>
           <div className="stat-lbl">Superficie faltante (m²)</div>
         </div>
       </div>
 
       <div className="card">
         <div className="card-title">
-          Ocupación simultánea del corral · temporada {d.anio_datos}
+          {usarRegistro
+            ? "Ocupación simultánea del corral · temporada en curso"
+            : `Ocupación simultánea del corral · temporada ${d.anio_datos}`}
           <span style={{ fontSize: 11, color: "var(--text3)", marginLeft: 10, fontFamily: "var(--font-mono)" }}>
-            {d.nidos_temporada} nidos · incubación {d.dias_incubacion} d + {d.dias_hasta_excavacion} d hasta excavar
+            {usarRegistro ? act.nidos_sembrados : d.nidos_temporada} nidos · incubación {d.dias_incubacion} d + {d.dias_hasta_excavacion} d hasta excavar
           </span>
         </div>
         <div className="chart-wrap">
@@ -107,8 +154,14 @@ export default function TabCapacidad() {
           </ResponsiveContainer>
         </div>
         <p style={{ fontSize: 10, color: "var(--text3)", marginTop: 8, fontStyle: "italic", paddingLeft: 8 }}>
-          La franja sombreada marca la ventana crítica, del {d.ventana_inicio} al {d.ventana_fin}.
-          Fuente de los conteos de anidación: {d.fuente_datos}.
+          {act.ventana_inicio
+            ? <>La franja sombreada marca la ventana crítica, del {act.ventana_inicio} al {act.ventana_fin}. </>
+            : <>Ningún día supera la capacidad segura. </>}
+          {usarRegistro
+            ? <>Curva construida con las {act.jornadas} jornadas guardadas, del {act.primera_siembra} al {act.ultima_siembra},
+                con la fecha exacta de cada siembra.</>
+            : <>Fuente de los conteos de anidación: {d.fuente_datos}. Los nidos de cada mes se reparten
+                por igual entre sus días, porque la fuente sólo publica totales mensuales.</>}
         </p>
       </div>
 
