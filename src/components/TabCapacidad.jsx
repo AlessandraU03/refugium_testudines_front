@@ -45,7 +45,15 @@ export default function TabCapacidad() {
   const idx = (f) => data.findIndex((p) => p.fecha === f);
   const iIni = act.ventana_inicio ? idx(act.ventana_inicio) : -1;
   const iFin = act.ventana_fin ? idx(act.ventana_fin) : -1;
+  // "Cobertura" = capacidad ÷ pico. Solo tiene lectura cuando el pico rebasa
+  // la capacidad (2022: 680 ÷ 2,187 = 31 %). Si el corral alcanza, esa razón
+  // pasa de 100 % (con 70 nidos daba 971 %) y lo que interesa es cuánto de la
+  // capacidad se llegó a ocupar.
+  const hayDeficit = act.deficit_maximo > 0;
   const pct = (act.cobertura_del_pico * 100).toFixed(0);
+  const ocupacionPct = d.capacidad_total > 0
+    ? ((act.pico_ocupacion / d.capacidad_total) * 100).toFixed(1)
+    : "0";
 
   const btn = (activo) => ({
     padding: "6px 14px", fontSize: 12, cursor: "pointer",
@@ -83,13 +91,22 @@ export default function TabCapacidad() {
       )}
 
       <div style={{
-        background: "rgba(245,54,92,0.08)", border: "1px solid rgba(245,54,92,0.3)",
+        background: hayDeficit ? "rgba(245,54,92,0.08)" : "rgba(45,206,137,0.08)",
+        border: `1px solid ${hayDeficit ? "rgba(245,54,92,0.3)" : "rgba(45,206,137,0.3)"}`,
         borderRadius: 10, padding: "12px 18px", marginBottom: 16,
         display: "flex", alignItems: "flex-start", gap: 12,
       }}>
-        <span style={{ fontSize: 20 }}>📐</span>
+        <span style={{ fontSize: 20 }}>{hayDeficit ? "📐" : "✅"}</span>
         <div style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.6 }}>
-          {usarRegistro
+          {!hayDeficit
+            ? <>El pico de ocupación {usarRegistro ? "alcanzado hasta ahora" : "de la temporada"} fue
+                de <strong>{act.pico_ocupacion} nidos</strong>, el{" "}
+                <strong style={{ color: "var(--golfina)" }}>{ocupacionPct} %</strong> de la capacidad
+                segura de {d.capacidad_total}. Ningún día superó el límite de{" "}
+                {d.densidad_max_nidos_m2} nido/m², así que quedan{" "}
+                <strong>{d.capacidad_total - act.pico_ocupacion}</strong> lugares libres en el momento
+                de mayor ocupación.</>
+            : usarRegistro
             ? <>Con los nidos sembrados hasta ahora, la superficie instalada cubre el{" "}
                 <strong style={{ color: "var(--laud)" }}>{pct} %</strong> de la ocupación máxima
                 alcanzada. Durante <strong>{act.dias_con_deficit} días</strong> la densidad
