@@ -252,6 +252,7 @@ export default function App() {
                     clustering={resultado?.clustering || temporada?.clustering}
                     nidosPrevios={resultado ? resultado.nidos_previos : (temporada?.nidos || [])}
                     mejor={resultado?.mejor}
+                    corral={resultado?.corral || temporada?.corral}
                   />
                 )}
 

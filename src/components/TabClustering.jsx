@@ -2,7 +2,7 @@ import { useState } from "react";
 
 const cmToM = (cm) => (cm * 0.01).toFixed(2);
 
-export default function TabClustering({ clustering, nidosPrevios = [], mejor }) {
+export default function TabClustering({ clustering, nidosPrevios = [], mejor, corral }) {
   const [hoverCuadrante, setHoverCuadrante] = useState(null);
 
   // Unir nidos nuevos y previos activos para el mapeo térmico
@@ -26,10 +26,12 @@ export default function TabClustering({ clustering, nidosPrevios = [], mejor }) 
     );
   }
 
-  // Dimensiones del corral (40m x 35m)
-  const LARGO_M = 40;
-  const ANCHO_M = 35;
-  const TAM_CUADRANTE_M = 2; // Cuadrantes de 2m x 2m
+  // Dimensiones reales del corral, leidas de corral_incubacion.csv.
+  // Estaban fijas en 40 x 35 m, medidas de un documento previo que la visita
+  // de campo corrigio a 30 x 8 m: el mapa dibujaba un corral inexistente.
+  const LARGO_M = corral ? Number(corral.largo_cm) / 100 : 30;
+  const ANCHO_M = corral ? Number(corral.ancho_cm) / 100 : 8;
+  const TAM_CUADRANTE_M = 1; // 1 m x 1 m, la parcela de Honarvar et al. (2008)
 
   const cols = Math.ceil(LARGO_M / TAM_CUADRANTE_M); // 20 columnas
   const rows = Math.ceil(ANCHO_M / TAM_CUADRANTE_M); // 18 filas
@@ -68,9 +70,17 @@ export default function TabClustering({ clustering, nidosPrevios = [], mejor }) 
   // Aplanar la rejilla para renderizarla fácilmente
   const cuadrantesAplanados = grid.flat();
 
-  // Encontrar hotspots (cuadrantes de 2x2m con 5 o más nidos activos en incubación)
-  // Biológicamente, 5 nidos en 4m² (2x2m) es una densidad muy alta para Golfina en corrales.
-  const hotspotsGrid = cuadrantesAplanados.filter((quad) => quad.activos >= 5);
+  // Cada cuadrante es de 1 m², así que "activos" ES la densidad en nidos/m².
+  // La densidad máxima documentada es 1 nido/m² (Best Practices IOTN 2018;
+  // NOM-162-SEMARNAT-2012) y el castigo medido de eclosión empieza a partir
+  // de 2 nidos/m², la densidad más baja que ensayaron Honarvar et al. (2008).
+  const DENSIDAD_NORMA = 1;
+  const DENSIDAD_ENSAYADA = 2;
+  const AREA_CUADRANTE = TAM_CUADRANTE_M * TAM_CUADRANTE_M;
+  const dens = (activos) => activos / AREA_CUADRANTE;
+
+  const hotspotsGrid = cuadrantesAplanados.filter((q) => dens(q.activos) > DENSIDAD_NORMA);
+  const resumen = clustering?.densidad || null;
 
   // SVG Render Setup
   const VW = 860;
@@ -82,17 +92,19 @@ export default function TabClustering({ clustering, nidosPrevios = [], mejor }) 
 
   // Determinar color de relleno térmico según nidos activos
   const getHeatColor = (activos) => {
+    const d = dens(activos);
     if (activos === 0) return "none";
-    if (activos <= 2) return "rgba(45, 206, 137, 0.25)";  // Verde - Seguro
-    if (activos <= 4) return "rgba(255, 190, 11, 0.45)";  // Amarillo - Precaución
-    return "rgba(245, 54, 92, 0.7)";                     // Rojo - Hotspot Crítico
+    if (d <= DENSIDAD_NORMA) return "rgba(45, 206, 137, 0.25)";     // dentro de norma
+    if (d <= DENSIDAD_ENSAYADA) return "rgba(255, 190, 11, 0.45)";  // sobre norma
+    return "rgba(245, 54, 92, 0.7)";                                // castigo medido
   };
 
   const getEstatusText = (activos) => {
+    const d = dens(activos);
     if (activos === 0) return "Vacío";
-    if (activos <= 2) return "Seguro (Baja densidad)";
-    if (activos <= 4) return "Precaución (Densidad media)";
-    return "🔥 Hotspot Crítico (Alta concentración)";
+    if (d <= DENSIDAD_NORMA) return `${d} nido/m² · dentro de la densidad documentada`;
+    if (d <= DENSIDAD_ENSAYADA) return `${d} nidos/m² · sobre la norma de 1 nido/m²`;
+    return `${d} nidos/m² · por encima del rango ensayado; eclosión reducida`;
   };
 
   return (
@@ -100,13 +112,21 @@ export default function TabClustering({ clustering, nidosPrevios = [], mejor }) 
       {/* Explicación Biológica Sencilla */}
       <div className="card" style={{ background: "rgba(161, 85, 232, 0.04)", borderColor: "rgba(161, 85, 232, 0.2)", marginBottom: 16 }}>
         <h4 style={{ color: "var(--text)", margin: "0 0 6px 0", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
-          <span>🐢</span> Mapa de Densidad Térmica (Rejilla de 2×2 metros)
+          <span>🐢</span> Mapa de densidad · rejilla de 1×1 metro
         </h4>
         <p style={{ fontSize: 11.5, color: "var(--text2)", lineHeight: 1.6, margin: 0 }}>
-          Para proteger los huevos, dividimos el corral en cuadrantes de **2×2 metros**. Cuando sembramos **5 o más nidos activos** 
-          en el mismo cuadrante, la respiración de los embriones produce un exceso de calor que se acumula en la arena. 
-          Si la temperatura supera los **29.7°C**, nacerán únicamente tortugas hembras (bloqueando la diversidad de género) 
-          y se reduce la tasa de eclosión. Este mapa te permite identificar esos cuadrantes de riesgo al instante.
+          Cada cuadrante mide <strong>1 m²</strong>, la misma parcela con la que Honarvar,
+          O'Connor y Spotila midieron experimentalmente el efecto del hacinamiento, así que
+          el número de nidos de un cuadrante <em>es</em> su densidad en nidos/m². La densidad
+          máxima documentada es <strong>1 nido/m²</strong>; el castigo medido sobre la eclosión
+          empieza a partir de <strong>2 nidos/m²</strong>, que es la densidad más baja que
+          ellos ensayaron.
+        </p>
+        <p style={{ fontSize: 11.5, color: "var(--text2)", lineHeight: 1.6, margin: "8px 0 0 0" }}>
+          Lo que el hacinamiento cuesta es <strong>eclosión</strong>, no proporción sexual: el
+          calor por densidad aparece en el último tercio de la incubación, cuando el sexo ya
+          quedó determinado en el tercio medio. Para corregir el sesgo hacia hembras la palanca
+          es la sombra, no la separación.
         </p>
       </div>
 
@@ -118,15 +138,19 @@ export default function TabClustering({ clustering, nidosPrevios = [], mejor }) 
           fontSize: 12, lineHeight: 1.6
         }}>
           <h4 style={{ margin: "0 0 6px 0", display: "flex", alignItems: "center", gap: 6 }}>
-            <span>⚠️</span> Alerta de Cuadrante Sobresaturado (Riesgo Térmico)
+            <span>⚠️</span> Cuadrantes por encima de la densidad documentada
           </h4>
           <p style={{ margin: 0 }}>
-            Se han detectado **{hotspotsGrid.length} cuadrante(s)** con alta concentración de nidos activos:
+            <strong>{hotspotsGrid.length}</strong> cuadrante(s) superan 1 nido/m²
+            {resumen ? <> · índice de eclosión del corral <strong>{resumen.indice_eclosion}</strong>,
+              es decir {resumen.crias_perdidas_pct} % de crías perdidas por hacinamiento</> : null}:
           </p>
           <ul style={{ margin: "6px 0 0 20px", padding: 0 }}>
             {hotspotsGrid.map((h, idx) => (
               <li key={idx} style={{ marginBottom: 4 }}>
-                <strong>Sector en X: {h.xmin}-{h.xmax}m, Y: {h.ymin}-{h.ymax}m</strong> con <strong>{h.activos} nidos activos</strong>. Evita sembrar nuevos nidos en esta zona durante los próximos días.
+                <strong>X {h.xmin}–{h.xmax} m, Y {h.ymin}–{h.ymax} m</strong>:{" "}
+                <strong>{h.activos} nidos/m²</strong>. Evita sembrar más nidos aquí mientras
+                estos sigan incubando.
               </li>
             ))}
           </ul>
@@ -138,7 +162,7 @@ export default function TabClustering({ clustering, nidosPrevios = [], mejor }) 
           fontSize: 12, display: "flex", alignItems: "center", gap: 8
         }}>
           <span>✅</span>
-          <span><strong>Distribución de Calor Segura:</strong> Todos los cuadrantes de 2x2m tienen densidades bajas o moderadas. El corral cuenta con una distribución térmica ideal.</span>
+          <span><strong>Dentro de la densidad documentada:</strong> ningún cuadrante supera 1 nido/m², así que no hay pérdida de eclosión atribuible al hacinamiento.</span>
         </div>
       )}
 
@@ -194,10 +218,10 @@ export default function TabClustering({ clustering, nidosPrevios = [], mejor }) 
 
               {/* Ejes en metros */}
               <text x={VW/2} y={VH+12} textAnchor="middle" fill="#8c9ba5" fontSize={10} fontFamily="DM Mono">
-                Largo del Corral (0 a 40 metros)
+                Largo del corral (0 a {LARGO_M.toFixed(2)} m)
               </text>
               <text x={13} y={VH/2} textAnchor="middle" fill="#8c9ba5" fontSize={10} fontFamily="DM Mono" transform={`rotate(-90,13,${VH/2})`}>
-                Ancho (0 a 35 metros)
+                Ancho (0 a {ANCHO_M.toFixed(2)} m)
               </text>
             </svg>
           </div>
@@ -238,24 +262,24 @@ export default function TabClustering({ clustering, nidosPrevios = [], mejor }) 
             <div style={{ display: "flex", gap: 12, alignItems: "center", padding: 12, background: "rgba(45, 206, 137, 0.05)", borderRadius: 8, border: "1px solid rgba(45, 206, 137, 0.15)" }}>
               <div style={{ width: 24, height: 24, borderRadius: 4, background: "rgba(45, 206, 137, 0.25)", border: "1px solid var(--golfina)" }} />
               <div>
-                <strong style={{ color: "var(--golfina)", fontSize: 12 }}>Rango Verde: Seguro (1 a 2 nidos activos)</strong>
-                <p style={{ margin: "2px 0 0 0", fontSize: 10, color: "var(--text3)" }}>Baja acumulación de calor metabólico. Temperatura estable de la arena.</p>
+                <strong style={{ color: "var(--golfina)", fontSize: 12 }}>Verde · hasta 1 nido/m²</strong>
+                <p style={{ margin: "2px 0 0 0", fontSize: 10, color: "var(--text3)" }}>Dentro de la densidad máxima documentada (Best Practices IOTN 2018; NOM-162-SEMARNAT-2012).</p>
               </div>
             </div>
 
             <div style={{ display: "flex", gap: 12, alignItems: "center", padding: 12, background: "rgba(255, 190, 11, 0.05)", borderRadius: 8, border: "1px solid rgba(255, 190, 11, 0.15)" }}>
               <div style={{ width: 24, height: 24, borderRadius: 4, background: "rgba(255, 190, 11, 0.45)", border: "1px solid var(--prieta)" }} />
               <div>
-                <strong style={{ color: "var(--prieta)", fontSize: 12 }}>Rango Amarillo: Densidad Media (3 a 4 nidos activos)</strong>
-                <p style={{ margin: "2px 0 0 0", fontSize: 10, color: "var(--text3)" }}>Zona con temperatura templada. Concentración moderada de nidos.</p>
+                <strong style={{ color: "var(--prieta)", fontSize: 12 }}>Amarillo · entre 1 y 2 nidos/m²</strong>
+                <p style={{ margin: "2px 0 0 0", fontSize: 10, color: "var(--text3)" }}>Por encima de la norma, pero por debajo del rango que se ensayó: aquí no hay pérdida medida.</p>
               </div>
             </div>
 
             <div style={{ display: "flex", gap: 12, alignItems: "center", padding: 12, background: "rgba(245, 54, 92, 0.05)", borderRadius: 8, border: "1px solid rgba(245, 54, 92, 0.15)" }}>
               <div style={{ width: 24, height: 24, borderRadius: 4, background: "rgba(245, 54, 92, 0.7)", border: "1px solid var(--laud)" }} />
               <div>
-                <strong style={{ color: "var(--laud)", fontSize: 12 }}>Rango Rojo: Hotspot Crítico (5 o más nidos activos)</strong>
-                <p style={{ margin: "2px 0 0 0", fontSize: 10, color: "var(--text3)" }}>Peligro térmico. Alta densidad en 4m². Riesgo elevado de feminización o muerte embrionaria.</p>
+                <strong style={{ color: "var(--laud)", fontSize: 12 }}>Rojo · más de 2 nidos/m²</strong>
+                <p style={{ margin: "2px 0 0 0", fontSize: 10, color: "var(--text3)" }}>Dentro del rango donde Honarvar et al. (2008) midieron caída de eclosión: 71.6 % a 2 nidos/m², 55.9 % a 5 y 29.5 % a 9.</p>
               </div>
             </div>
 
