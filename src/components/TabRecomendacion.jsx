@@ -54,6 +54,7 @@ export default function TabRecomendacion() {
 
   const sobre = rec && rec.estado === "sobre_capacidad";
   const comp = sobre ? rec.comparacion : null;
+  const actual = pred?.corral_actual || null;
   const sin = pred?.escenarios?.sin_sombra;
   const con = pred?.escenarios?.con_sombra;
 
@@ -111,6 +112,65 @@ export default function TabRecomendacion() {
 
       {rec && (
         <>
+          {/* ----------------------------------- lo que ya esta sembrado */}
+          {actual && (
+            <div style={{ marginBottom: 22 }}>
+              <h3 style={{ fontSize: 14, marginBottom: 4 }}>
+                Lo que ya está sembrado en el corral
+              </h3>
+              <p style={{ fontSize: 11.5, color: "var(--text2)", margin: "0 0 10px 0", lineHeight: 1.6 }}>
+                {actual.n_nidos} nidos activos, sembrados en {actual.meses_de_siembra.join(", ")}.
+                Cada uno se evalúa con su posición real, su fecha de siembra y la densidad que
+                tiene a su alrededor, no con un promedio del corral.
+              </p>
+
+              <div className="grid-4" style={{ marginBottom: 12 }}>
+                <div className="stat-box">
+                  <div className="stat-label">Crías esperadas</div>
+                  <div className="stat-value">{num(actual.crias_esperadas)}</div>
+                  <div className="stat-sub">
+                    de {num(actual.crias_sin_hacinamiento)} sin hacinamiento
+                  </div>
+                </div>
+                <div className="stat-box">
+                  <div className="stat-label">Perdidas por apiñamiento</div>
+                  <div className="stat-value" style={{ color: "var(--laud)" }}>
+                    {num(actual.crias_perdidas)}
+                  </div>
+                  <div className="stat-sub">
+                    {actual.crias_sin_hacinamiento > 0
+                      ? `${((actual.crias_perdidas / actual.crias_sin_hacinamiento) * 100).toFixed(1)} % del total`
+                      : "—"}
+                  </div>
+                </div>
+                <div className="stat-box">
+                  <div className="stat-label">Proporción sexual</div>
+                  <div className="stat-value">{actual.pct_hembras} %</div>
+                  <div className="stat-sub">hembras · {actual.pct_machos} % machos</div>
+                </div>
+                <div className="stat-box">
+                  <div className="stat-label">Densidad</div>
+                  <div className="stat-value">{actual.densidad_media_m2}</div>
+                  <div className="stat-sub">
+                    media · máxima {actual.densidad_maxima_m2} nidos/m²
+                  </div>
+                </div>
+              </div>
+
+              {actual.nidos_en_riesgo_termico > 0 && (
+                <div style={{
+                  background: "rgba(245,54,92,0.08)", border: "1px solid rgba(245,54,92,0.3)",
+                  borderRadius: 10, padding: "10px 16px",
+                  fontSize: 12, color: "var(--text2)", lineHeight: 1.6,
+                }}>
+                  <strong>{actual.nidos_en_riesgo_termico}</strong> de {actual.n_nidos} nidos
+                  alcanzan o superan los 36 °C en el último tercio de la incubación, el límite de
+                  tolerancia térmica del embrión. Es donde la malla sombra rinde más.
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ------------------------------------------------ veredicto */}
           <div
             style={{
