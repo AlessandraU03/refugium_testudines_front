@@ -28,7 +28,7 @@ const TABS = [
   { id: "top3",        label: "Top 3 Individuos"   },
   { id: "temporada",   label: "Estado Corral"      },
   { id: "clustering",  label: "Densidad del Corral" },
-  { id: "pts",         label: "PTS (proyección)"   },
+  { id: "pts",         label: "Proporción Sexual"  },
   { id: "validacion",  label: "Validación"         },
   { id: "fechas",      label: "Fechas Eclosión"    },
   { id: "variables",   label: "Variables V1–V3"    },
@@ -314,7 +314,13 @@ export default function App() {
                 {/* Tab: Monitoreo PTS (Período Termosensible) */}
                 {tabActiva === "pts" && (
                   resultado ? (
-                    <TabPTS mejor={resultado.mejor} fechas={resultado.fechas} />
+                    <TabPTS
+                      mejor={resultado.mejor}
+                      fechas={resultado.fechas}
+                      validacion={resultado.validacion}
+                      rendimiento={resultado.rendimiento}
+                      sitio={resultado.sitio}
+                    />
                   ) : (
                     <div className="empty-state">
                       <div className="empty-icon">🔥</div>

@@ -1,6 +1,9 @@
 const COLORES_ESP = {
   golfina: { color: "var(--golfina)", bg: "var(--golfina-bg)" },
+  prieta:  { color: "var(--prieta)",  bg: "var(--prieta-bg)"  },
+  laud:    { color: "var(--laud)",    bg: "var(--laud-bg)"    },
 };
+const NOMBRE_ESP = { golfina: "Golfina", prieta: "Prieta", laud: "Laúd" };
 
 function diasHasta(fechaStr) {
   const hoy  = new Date();
@@ -21,9 +24,12 @@ export default function TabFechas({ fechas }) {
           <span>⏳</span> Calendario de Desarrollo Embrionario y Periodo Termosensible (PTS)
         </h4>
         <p style={{ fontSize: 11.5, color: "var(--text2)", lineHeight: 1.6, margin: 0 }}>
-          De acuerdo con los estudios de <strong>Sandoval et al. (2020)</strong> y <strong>de la Torre-Robles et al. (2017)</strong>, 
-          el sexo de las tortugas golfinas se define exclusivamente durante el <strong>segundo tercio del periodo de incubación</strong> (Periodo Termosensible o PTS). 
-          Durante estos días clave, las temperaturas mayores a <strong>29.95°C</strong> inducen la diferenciación de hembras, mientras que temperaturas menores a <strong>28°C</strong> producen machos.
+          El sexo se define durante el <strong>segundo tercio de la incubación</strong> (Periodo
+          Termosensible o PTS), y cada especie tiene su propia ventana y su propia temperatura
+          pivote: por encima de ella salen hembras y por debajo, machos. Golfina 29.95 °C
+          (Sandoval et al., Playa Ceuta), prieta 29.2 °C (Godfrey y Mrosovsky 2006) y
+          laúd 29.4 °C. La proporción de cada nido depende de dónde quedó: consulta la
+          pestaña <strong>Proporción Sexual</strong> para el detalle nido por nido.
         </p>
       </div>
 
@@ -33,7 +39,7 @@ export default function TabFechas({ fechas }) {
           <div className="card-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>🧬 Estimación de Proporción Sexual (Modelo de Girondot)</span>
             <span className="badge badge-sec" style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>
-              Pivote: 29.95°C · S = -0.63
+              Pivote propia de cada especie
             </span>
           </div>
 
@@ -41,19 +47,34 @@ export default function TabFechas({ fechas }) {
             {/* Medidor visual de proporción */}
             <div style={{ background: "var(--bg2)", padding: 16, borderRadius: 8, border: "1px solid var(--border)" }}>
               <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 8, fontFamily: "var(--font-mono)" }}>
-                PROPORCIÓN ESPERADA EN ESTA JORNADA
+                PROPORCIÓN ESPERADA, POR ESPECIE
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 13, fontWeight: 700 }}>
-                <span style={{ color: "var(--prieta)" }}>♂ Machos: {propSex.pct_machos}%</span>
-                <span style={{ color: "var(--laud)" }}>♀ Hembras: {propSex.pct_hembras}%</span>
-              </div>
-              <div style={{ height: 12, background: "var(--bg3)", borderRadius: 6, overflow: "hidden", display: "flex" }}>
-                <div style={{ width: `${propSex.pct_machos}%`, height: "100%", background: "var(--prieta)", transition: "width 0.4s" }} />
-                <div style={{ width: `${propSex.pct_hembras}%`, height: "100%", background: "var(--laud)", transition: "width 0.4s" }} />
-              </div>
-              <div style={{ marginTop: 8, fontSize: 11, color: "var(--text2)", fontStyle: "italic" }}>
-                Diagnóstico: <strong>{propSex.sesgo}</strong>
-              </div>
+              {/* Una barra por especie presente: antes se mostraba sólo la
+                  primera, aunque el modelo ya calcula las tres por separado. */}
+              {fechas.map((fx) => {
+                const ps = fx.proporcion_sexual || {};
+                return (
+                  <div key={fx.especie} style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5, fontSize: 12, fontWeight: 700 }}>
+                      <span className={`badge badge-${fx.especie}`}>
+                        {NOMBRE_ESP[fx.especie] || fx.especie}
+                      </span>
+                      <span>
+                        <span style={{ color: "var(--prieta)" }}>♂ {ps.pct_machos}%</span>
+                        {" · "}
+                        <span style={{ color: "var(--laud)" }}>♀ {ps.pct_hembras}%</span>
+                      </span>
+                    </div>
+                    <div style={{ height: 10, background: "var(--bg3)", borderRadius: 6, overflow: "hidden", display: "flex" }}>
+                      <div style={{ width: `${ps.pct_machos}%`, height: "100%", background: "var(--prieta)", transition: "width 0.4s" }} />
+                      <div style={{ width: `${ps.pct_hembras}%`, height: "100%", background: "var(--laud)", transition: "width 0.4s" }} />
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 10.5, color: "var(--text3)", fontFamily: "var(--font-mono)" }}>
+                      {fx.nidos} nidos · PTS {ps.temp_estimada_pts} °C · {ps.sesgo}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Ventana Crítica PTS */}
