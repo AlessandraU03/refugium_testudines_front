@@ -48,7 +48,46 @@ function getColorPorSemana(semana_info, eclosionado) {
   return { fill: "#3498db", stroke: "#2980b9", label: `Semana ${semana}` };
 }
 
-export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = [] }) {
+// Silueta de tortuga por especie. La forma del caparazón distingue a cada una:
+// la golfina es casi redonda, la prieta más ovalada y la laúd alargada y con
+// las quillas longitudinales que le dan su nombre (tortuga de cuero).
+const FORMA = {
+  golfina: { rx: 1.00, ry: 0.92, quillas: 0 },
+  prieta:  { rx: 0.86, ry: 1.06, quillas: 0 },
+  laud:    { rx: 0.72, ry: 1.22, quillas: 3 },
+};
+
+function Tortuga({ x, y, r, fill, stroke, borde = 1.2, especie = "golfina", opacity = 1 }) {
+  const f = FORMA[especie] || FORMA.golfina;
+  const rx = r * f.rx;
+  const ry = r * f.ry;
+  const al = r * 0.42;            // aleta
+  const quillas = [];
+  for (let i = 0; i < f.quillas; i++) {
+    const dx = (i - (f.quillas - 1) / 2) * rx * 0.55;
+    quillas.push(
+      <line key={i} x1={dx} y1={-ry * 0.62} x2={dx} y2={ry * 0.62}
+        stroke={stroke} strokeWidth={borde * 0.7} opacity={0.75} />
+    );
+  }
+  return (
+    <g transform={`translate(${x} ${y})`} opacity={opacity}>
+      {/* aletas delanteras y traseras */}
+      <ellipse cx={-rx * 0.85} cy={-ry * 0.40} rx={al} ry={al * 0.58} fill={fill} stroke={stroke} strokeWidth={borde * 0.6} />
+      <ellipse cx={rx * 0.85} cy={-ry * 0.40} rx={al} ry={al * 0.58} fill={fill} stroke={stroke} strokeWidth={borde * 0.6} />
+      <ellipse cx={-rx * 0.72} cy={ry * 0.62} rx={al * 0.78} ry={al * 0.5} fill={fill} stroke={stroke} strokeWidth={borde * 0.6} />
+      <ellipse cx={rx * 0.72} cy={ry * 0.62} rx={al * 0.78} ry={al * 0.5} fill={fill} stroke={stroke} strokeWidth={borde * 0.6} />
+      {/* cabeza */}
+      <circle cx={0} cy={-ry * 1.02} r={r * 0.34} fill={fill} stroke={stroke} strokeWidth={borde * 0.7} />
+      {/* caparazón */}
+      <ellipse cx={0} cy={0} rx={rx} ry={ry} fill={fill} stroke={stroke} strokeWidth={borde} />
+      {quillas}
+    </g>
+  );
+}
+
+export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = [], malla = null }) {
+  const [zoom, setZoom] = useState(1.6);
   const [hover, setHover] = useState(null);
   const [seleccionado, setSeleccionado] = useState(null);
   const [mostrarPrevios, setMostrarPrevios] = useState(true);
@@ -138,6 +177,37 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
             <span>Eclosionado</span>
           </div>
         </div>
+
+        {/* Forma de la tortuga = especie. Color = semana de incubación. */}
+        <div style={{
+          display: "flex", gap: 20, flexWrap: "wrap", fontSize: 12,
+          marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)",
+          alignItems: "center",
+        }}>
+          <span style={{ color: "var(--text3)" }}>La forma indica la especie:</span>
+          {[["golfina", "Golfina"], ["prieta", "Prieta"], ["laud", "Laúd"]].map(([esp, txt]) => (
+            <div key={esp} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <svg width={26} height={26} viewBox="0 0 26 26">
+                <Tortuga x={13} y={13} r={8} especie={esp}
+                  fill="var(--text2)" stroke="var(--bg)" borde={1.2} />
+              </svg>
+              <span className={`badge badge-${esp}`}>{txt}</span>
+            </div>
+          ))}
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ color: "var(--text3)" }}>Zoom</span>
+            {[1, 1.6, 2.4, 3.5].map((z) => (
+              <button
+                key={z}
+                className={`btn ${zoom === z ? "btn-primary" : "btn-secondary"}`}
+                style={{ width: "auto", padding: "4px 10px", fontSize: 11, margin: 0 }}
+                onClick={() => setZoom(z)}
+              >
+                {z}×
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* SVG Corral */}
@@ -152,7 +222,8 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
         </div>
 
         <div style={{ overflowX: "auto", background: "var(--bg3)" }}>
-          <svg viewBox={`0 0 ${VW} ${VH + 20}`} width="100%" style={{ display: "block", minWidth: 600 }}>
+          <svg viewBox={`0 0 ${VW} ${VH + 20}`} width={`${100 * zoom}%`}
+            style={{ display: "block", minWidth: 600 * zoom }}>
             {/* Fondo general */}
             <rect x={PAD} y={PAD} width={VW - 2 * PAD} height={VH - 2 * PAD}
               fill="rgba(0,0,0,0.3)" stroke="var(--border)" strokeWidth={2} rx={4} />
@@ -183,6 +254,30 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
               );
             })}
 
+            {/* Malla sombra (csv/sitio.csv). La sombra real se corre con el sol,
+                así que cada nido lleva su propia fracción de sombra calculada. */}
+            {malla && (
+              <g pointerEvents="none">
+                <defs>
+                  <pattern id="rayado-malla" width="10" height="10" patternUnits="userSpaceOnUse"
+                    patternTransform="rotate(45)">
+                    <line x1="0" y1="0" x2="0" y2="10" stroke="var(--text3)" strokeWidth="1.5" opacity="0.35" />
+                  </pattern>
+                </defs>
+                <rect
+                  x={sx(malla.xmin)} y={sy(malla.ymin)}
+                  width={sx(malla.xmax) - sx(malla.xmin)}
+                  height={sy(malla.ymax) - sy(malla.ymin)}
+                  fill="url(#rayado-malla)" stroke="var(--text3)"
+                  strokeWidth={1} strokeDasharray="2 4"
+                />
+                <text x={sx(malla.xmin) + 6} y={sy(malla.ymax) + 16}
+                  fill="var(--text3)" fontSize={11} fontFamily="var(--font-mono)">
+                  malla sombra (cobertura supuesta)
+                </text>
+              </g>
+            )}
+
             {/* Cuadrícula de sectores (tenue) */}
             {lineasX.map((xVal, idx) => (
               <line
@@ -208,14 +303,14 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
                   onClick={() => handleNidoClick({ ...n, jornada_previa: true })}
                   style={{ cursor: "pointer" }}
                 >
-                  <circle
-                    cx={sx(n.x)} cy={sy(n.y)}
-                    r={isSelected ? 7 : isHov ? 6 : 4}
+                  <Tortuga
+                    x={sx(n.x)} y={sy(n.y)}
+                    r={isSelected ? 8 : isHov ? 7 : 5}
+                    especie={n.especie}
                     fill={colorInfo.fill}
-                    opacity={isSelected ? 0.85 : 0.4}
+                    opacity={isSelected ? 0.9 : 0.45}
                     stroke={isSelected ? "#fff" : colorInfo.stroke}
-                    strokeWidth={isSelected ? 2 : isHov ? 1.5 : 1}
-                    style={{ transition: "r 0.15s" }}
+                    borde={isSelected ? 2 : 1}
                   />
                 </g>
               );
@@ -235,15 +330,14 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
                   onClick={() => handleNidoClick(g)}
                   style={{ cursor: "pointer" }}
                 >
-                  {/* Círculo del nido */}
-                  <circle
-                    cx={sx(g.x)} cy={sy(g.y)}
-                    r={isSelected ? 11 : isHov ? 9.5 : 7}
+                  {/* Tortuga del nido, con la silueta de su especie */}
+                  <Tortuga
+                    x={sx(g.x)} y={sy(g.y)}
+                    r={isSelected ? 12 : isHov ? 10.5 : 8}
+                    especie={g.especie}
                     fill={colorInfo.fill}
                     stroke={isSelected ? "#fff" : "#000"}
-                    strokeWidth={isSelected ? 2.5 : isHov ? 2 : 1.5}
-                    opacity={1}
-                    style={{ transition: "r 0.15s" }}
+                    borde={isSelected ? 2.5 : isHov ? 2 : 1.4}
                   />
 
                   {/* Indicador de PTS en la esquina (punto adicional si está en semana 3) */}
@@ -420,6 +514,17 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
                 <span style={{ color: "var(--text3)", fontSize: 11, display: "block", marginBottom: 4 }}>Sex Ratio</span>
                 <span style={{ fontSize: 12, fontFamily: "var(--font-mono)" }}>
                   <strong style={{ color: "var(--laud)" }}>{seleccionado.proporcion_sexual.pct_hembras}% ♀</strong> / <strong style={{ color: "var(--prieta)" }}>{seleccionado.proporcion_sexual.pct_machos}% ♂</strong>
+                </span>
+              </div>
+            )}
+            {seleccionado.sombra_solar != null && (
+              <div>
+                <span style={{ color: "var(--text3)", fontSize: 11, display: "block", marginBottom: 4 }}>Sombra del día</span>
+                <span style={{ fontSize: 12, fontFamily: "var(--font-mono)" }}>
+                  <strong>{(seleccionado.sombra_solar * 100).toFixed(0)}%</strong> de la insolación directa
+                  {seleccionado.proporcion_sexual && (
+                    <> · PTS {seleccionado.proporcion_sexual.temp_estimada_pts} °C</>
+                  )}
                 </span>
               </div>
             )}

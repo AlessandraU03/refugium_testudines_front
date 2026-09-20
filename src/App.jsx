@@ -9,8 +9,7 @@ import TabVariables from "./components/TabVariables";
 import TabClustering from "./components/TabClustering";
 import TabTemporada from "./components/TabTemporada";
 import TabPTS from "./components/TabPTS";
-import TabCapacidad from "./components/TabCapacidad";
-import TabRecomendacion from "./components/TabRecomendacion";
+import TabRendimiento from "./components/TabRendimiento";
 import turtleLogo from "./turtle_logo.png";
 import "./App.css";
 
@@ -19,25 +18,27 @@ const API_URL = window.location.hostname === "localhost" || window.location.host
   ? "http://localhost:5000"
   : "https://refugium-testudines-back.onrender.com";
 
+// El orden importa: primero lo que produce el AG, después el contexto del
+// corral. Las pestañas de Capacidad y Recomendación se eliminaron porque
+// desplazaban al algoritmo del centro del sistema.
 const TABS = [
-  { id: "temporada",  label: "Estado Corral"       },
-  { id: "capacidad",  label: "Capacidad"           },
-  { id: "recomendacion", label: "Recomendación"    },
-  { id: "clustering", label: "Análisis IA (Densidad)" },
-  { id: "corral",     label: "Diagrama Corral"     },
-  { id: "evolucion",  label: "Evolución Aptitud"  },
-  { id: "pts",        label: "PTS (proyección)"    },
-  { id: "top3",       label: "Top 3 Individuos"   },
-  { id: "validacion", label: "Validación"          },
-  { id: "fechas",     label: "Fechas Eclosión"     },
-  { id: "variables",  label: "Variables V1–V3"     },
+  { id: "corral",      label: "Diagrama Corral"    },
+  { id: "rendimiento", label: "Rendimiento del AG" },
+  { id: "evolucion",   label: "Evolución Aptitud"  },
+  { id: "top3",        label: "Top 3 Individuos"   },
+  { id: "temporada",   label: "Estado Corral"      },
+  { id: "clustering",  label: "Densidad del Corral" },
+  { id: "pts",         label: "PTS (proyección)"   },
+  { id: "validacion",  label: "Validación"         },
+  { id: "fechas",      label: "Fechas Eclosión"    },
+  { id: "variables",   label: "Variables V1–V3"    },
 ];
 
 export default function App() {
   const [resultado,   setResultado]   = useState(null);
   const [ejecutando,  setEjecutando]  = useState(false);
   const [error,       setError]       = useState(null);
-  const [tabActiva,   setTabActiva]   = useState("temporada"); // Iniciamos por defecto en el Estado del Corral
+  const [tabActiva,   setTabActiva]   = useState("corral"); // El corral optimizado es la salida principal del sistema
   const [guardado,    setGuardado]    = useState(false);
   const [inputsAG,    setInputsAG]    = useState(null);
   const [temporada,   setTemporada]   = useState(null);
@@ -264,6 +265,7 @@ export default function App() {
                       zonas={resultado.zonas}
                       corral={resultado.corral}
                       nidosPrevios={resultado.nidos_previos || []}
+                      malla={resultado.sitio?.malla || null}
                     />
                   ) : (
                     <div className="empty-state">
@@ -291,9 +293,23 @@ export default function App() {
                   )
                 )}
 
-                {/* Tab: Capacidad (no requiere ejecutar el AG) */}
-                {tabActiva === "capacidad" && <TabCapacidad />}
-                {tabActiva === "recomendacion" && <TabRecomendacion />}
+                {/* Tab: Rendimiento — qué aportó el AG frente a sembrar sin algoritmo */}
+                {tabActiva === "rendimiento" && (
+                  resultado?.rendimiento ? (
+                    <TabRendimiento
+                      rendimiento={resultado.rendimiento}
+                      ordenZonas={resultado.orden_zonas}
+                      ordenBase={resultado.orden_base}
+                      sitio={resultado.sitio}
+                    />
+                  ) : (
+                    <div className="empty-state">
+                      <div className="empty-icon">🐢</div>
+                      <p>Optimización inactiva</p>
+                      <p className="empty-sub">Ejecuta el AG para comparar su colocación contra el llenado secuencial que se hace hoy en el corral.</p>
+                    </div>
+                  )
+                )}
 
                 {/* Tab: Monitoreo PTS (Período Termosensible) */}
                 {tabActiva === "pts" && (

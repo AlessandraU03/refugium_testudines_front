@@ -8,7 +8,11 @@ export default function PanelEntradas({
 }) {
   const [form, setForm] = useState({
     n_golfina: "70",
+    n_prieta:  "25",
+    n_laud:    "5",
     fecha:     today,
+    largo_m:   "30",
+    ancho_m:   "8",
   });
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -16,11 +20,15 @@ export default function PanelEntradas({
   const handleSubmit = () => {
     onEjecutar({
       n_golfina: Math.max(0, parseInt(form.n_golfina) || 0),
-      n_prieta:  0,
-      n_laud:    0,
+      n_prieta:  Math.max(0, parseInt(form.n_prieta)  || 0),
+      n_laud:    Math.max(0, parseInt(form.n_laud)    || 0),
       fecha:     form.fecha,
+      largo_m:   Math.max(1, parseFloat(form.largo_m) || 30),
+      ancho_m:   Math.max(1, parseFloat(form.ancho_m) || 8),
     });
   };
+
+  const areaM2 = (parseFloat(form.largo_m) || 0) * (parseFloat(form.ancho_m) || 0);
 
   const res = temporada?.resumen || {};
 
@@ -30,12 +38,40 @@ export default function PanelEntradas({
       <div className="panel-section">
         <div className="panel-label">Entradas de la Jornada</div>
         <div className="field">
-          <label><span className="dot-golfina">●</span> Nidos de Golfina a Sembrar</label>
-          <input type="number" min="1" value={form.n_golfina} onChange={set("n_golfina")} />
+          <label><span className="dot-golfina">●</span> Nidos Golfina</label>
+          <input type="number" min="0" value={form.n_golfina} onChange={set("n_golfina")} />
+        </div>
+        <div className="field">
+          <label><span className="dot-prieta">●</span> Nidos Prieta</label>
+          <input type="number" min="0" value={form.n_prieta} onChange={set("n_prieta")} />
+        </div>
+        <div className="field">
+          <label><span className="dot-laud">●</span> Nidos Laúd</label>
+          <input type="number" min="0" value={form.n_laud} onChange={set("n_laud")} />
         </div>
         <div className="field">
           <label>Fecha de la Jornada</label>
           <input type="date" value={form.fecha} onChange={set("fecha")} />
+        </div>
+      </div>
+
+      {/* MEDIDAS DEL CORRAL */}
+      <div className="panel-section">
+        <div className="panel-label">Medidas del Corral</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <div className="field" style={{ margin: 0 }}>
+            <label>Largo (m)</label>
+            <input type="number" min="1" step="0.5" value={form.largo_m} onChange={set("largo_m")} />
+          </div>
+          <div className="field" style={{ margin: 0 }}>
+            <label>Ancho (m)</label>
+            <input type="number" min="1" step="0.5" value={form.ancho_m} onChange={set("ancho_m")} />
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 8, lineHeight: 1.6 }}>
+          {areaM2 > 0 && (
+            <>Área {areaM2.toFixed(0)} m² · caben {Math.floor(areaM2)} nidos a 1 nido/m²</>
+          )}
         </div>
       </div>
 
@@ -64,7 +100,9 @@ export default function PanelEntradas({
             <tr><th>Especie</th><th>P.Opt</th><th>Sep.Min</th></tr>
           </thead>
           <tbody>
-            {[["golfina","45cm","100cm"]].map(([e,p,s]) => (
+            {[["golfina","45cm","100cm"],
+              ["prieta","50cm","120cm"],
+              ["laud","80cm","150cm"]].map(([e,p,s]) => (
               <tr key={e}>
                 <td><span className={`badge badge-${e}`}>{e}</span></td>
                 <td style={{ fontFamily:"var(--font-mono)" }}>{p}</td>
