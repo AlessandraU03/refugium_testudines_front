@@ -109,6 +109,16 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
   const sx = (cm) => PAD + (cm / LARGO) * (VW - 2 * PAD);
   const sy = (cm) => PAD + (cm / ANCHO) * (VH - 2 * PAD);
 
+  // Tamaño del ícono EN CENTÍMETROS DE TERRENO, no en píxeles fijos.
+  //
+  // Antes el radio era una constante (7-8 unidades del viewBox), así que al
+  // cambiar las medidas del corral el ícono crecía respecto al terreno y dos
+  // nidos separados un metro se veían encimados aunque no lo estuvieran.
+  // Atado a la escala, una tortuga siempre mide lo mismo sobre la arena: unos
+  // 30 cm de radio, menos de la mitad de la separación mínima de la norma.
+  const escala = (VW - 2 * PAD) / LARGO;          // unidades por cm
+  const rNido = Math.max(2.5, 30 * escala);       // 30 cm de radio real
+
   const jornadasPrevias = {};
   nidosPrevios.forEach((n) => {
     if (n.zonas_jornada) {
@@ -305,7 +315,7 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
                 >
                   <Tortuga
                     x={sx(n.x)} y={sy(n.y)}
-                    r={isSelected ? 8 : isHov ? 7 : 5}
+                    r={rNido * (isSelected ? 1.25 : isHov ? 1.1 : 0.8)}
                     especie={n.especie}
                     fill={colorInfo.fill}
                     opacity={isSelected ? 0.9 : 0.45}
@@ -333,7 +343,7 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
                   {/* Tortuga del nido, con la silueta de su especie */}
                   <Tortuga
                     x={sx(g.x)} y={sy(g.y)}
-                    r={isSelected ? 12 : isHov ? 10.5 : 8}
+                    r={rNido * (isSelected ? 1.35 : isHov ? 1.18 : 1.0)}
                     especie={g.especie}
                     fill={colorInfo.fill}
                     stroke={isSelected ? "#fff" : "#000"}
