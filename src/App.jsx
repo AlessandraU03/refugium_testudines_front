@@ -309,6 +309,8 @@ export default function App() {
                       ordenZonas={resultado.orden_zonas}
                       ordenBase={resultado.orden_base}
                       sitio={resultado.sitio}
+                      ordenFijo={resultado.orden_fijo}
+                      ordenMotivo={resultado.orden_motivo}
                     />
                   ) : (
                     <div className="empty-state">

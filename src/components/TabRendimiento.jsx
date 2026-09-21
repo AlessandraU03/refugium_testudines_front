@@ -16,23 +16,29 @@ const MESES = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio",
 const NOMBRE = { golfina: "Golfina", prieta: "Prieta", laud: "Laúd" };
 
 // Qué reparto de franjas eligió el AG y qué parámetros del sitio son supuestos.
-function RepartoYSupuestos({ ordenZonas, ordenBase, sitio }) {
+function RepartoYSupuestos({ ordenZonas, ordenBase, sitio, ordenFijo, ordenMotivo }) {
   if (!ordenZonas && !sitio) return null;
-  const cambio = ordenZonas && ordenBase &&
-    ordenZonas.join() !== ordenBase.join();
   const supuestos = sitio?.supuestos || [];
   return (
     <div className="card" style={{ marginTop: 20 }}>
       {ordenZonas && (
         <>
-          <div className="card-title">Reparto de franjas elegido por el AG</div>
+          <div className="card-title">
+            {ordenFijo ? "Reparto de franjas del corral (fijo)"
+                       : "Reparto de franjas elegido por el AG"}
+          </div>
           <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.7, margin: "0 0 12px" }}>
             De izquierda a derecha del corral:{" "}
             <strong>{ordenZonas.map((e) => NOMBRE[e] || e).join(" → ")}</strong>.{" "}
-            {cambio
-              ? "Es distinto del reparto histórico: el AG movió la sombra a otra especie porque así se pierden menos nidos por calor."
-              : `Coincide con el reparto histórico: con esta mezcla de especies, dejar a ${NOMBRE[ordenZonas[0]] || ordenZonas[0]} bajo la malla es lo que menos nidos pierde por calor. Con otra mezcla el AG puede elegir otro reparto.`}
+            {ordenMotivo}
           </p>
+          {ordenFijo && (
+            <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.7, margin: "0 0 12px" }}>
+              El reparto sólo se decide una vez, con el corral vacío. A partir de
+              la primera siembra queda fijo toda la temporada: cambiar una especie
+              de franja obligaría a desenterrar los nidos que ya están sembrados.
+            </p>
+          )}
         </>
       )}
       {sitio && (
@@ -57,7 +63,8 @@ function RepartoYSupuestos({ ordenZonas, ordenBase, sitio }) {
   );
 }
 
-export default function TabRendimiento({ rendimiento, ordenZonas, ordenBase, sitio }) {
+export default function TabRendimiento({ rendimiento, ordenZonas, ordenBase, sitio,
+                                         ordenFijo, ordenMotivo }) {
   const { ag, secuencial, ganancia_crias, ganancia_fitness } = rendimiento;
 
   // Umbral de lectura: por debajo de una cría de diferencia las dos
@@ -183,7 +190,8 @@ export default function TabRendimiento({ rendimiento, ordenZonas, ordenBase, sit
         )}
       </p>
 
-      <RepartoYSupuestos ordenZonas={ordenZonas} ordenBase={ordenBase} sitio={sitio} />
+      <RepartoYSupuestos ordenZonas={ordenZonas} ordenBase={ordenBase} sitio={sitio}
+        ordenFijo={ordenFijo} ordenMotivo={ordenMotivo} />
     </div>
   );
 }
