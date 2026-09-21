@@ -3,6 +3,7 @@ import PanelEntradas from "./components/PanelEntradas";
 import TabEvolucion from "./components/TabEvolucion";
 import TabTop3 from "./components/TabTop3";
 import TabCorral from "./components/TabCorral";
+import TarjetaCupo from "./components/TarjetaCupo";
 import TabValidacion from "./components/TabValidacion";
 import TabFechas from "./components/TabFechas";
 import TabVariables from "./components/TabVariables";
@@ -262,13 +263,18 @@ export default function App() {
                 {/* Tab: Diagrama Corral (Jornada actual) */}
                 {tabActiva === "corral" && (
                   resultado ? (
-                    <TabCorral
-                      mejor={resultado.mejor}
-                      zonas={resultado.zonas}
-                      corral={resultado.corral}
-                      nidosPrevios={resultado.nidos_previos || []}
-                      malla={resultado.sitio?.malla || null}
-                    />
+                    <>
+                      <TarjetaCupo cupo={resultado.cupo} />
+                      <TabCorral
+                        mejor={resultado.mejor}
+                        zonas={resultado.zonas}
+                        corral={resultado.corral}
+                        nidosPrevios={resultado.nidos_previos || []}
+                        malla={resultado.sitio?.malla || null}
+                        riego={resultado.sitio?.riego || null}
+                        riegoActivo={!!resultado.sitio?.riego_activo}
+                      />
+                    </>
                   ) : (
                     <div className="empty-state">
                       <div className="empty-icon">🥚</div>

@@ -80,8 +80,10 @@ export default function TabRendimiento({ rendimiento, ordenZonas, ordenBase, sit
     ["Densidad máxima", `${f2(ag.densidad_maxima_m2)} nidos/m²`,
       `${f2(secuencial.densidad_maxima_m2)} nidos/m²`,
       "El nido más apretado del corral. La norma son 1.0 nidos/m²"],
-    ["Hembras", `${f1(ag.pct_hembras)} %`, `${f1(secuencial.pct_hembras)} %`,
-      "Modelo de Girondot sobre la temperatura del período termosensible"],
+    ["Hembras de la cohorte", `${f1(ag.pct_hembras)} %`, `${f1(secuencial.pct_hembras)} %`,
+      `Hembras sobre el total de crías, pesado por nidada. Objetivo: ${f1(ag.objetivo_pct_hembras)} %`],
+    ["Calidad de proporción sexual", f4(ag.calidad_sexo), f4(secuencial.calidad_sexo),
+      "Cercanía de la cohorte al objetivo, en escala 0–1. Es el segundo objetivo del AG"],
     ["Temp. media del PTS", `${f2(ag.temp_pts_media_c)} °C`,
       `${f2(secuencial.temp_pts_media_c)} °C`,
       "Pivote propia de cada especie: golfina 29.95, prieta 29.2, laúd 29.4 °C"],
@@ -189,6 +191,34 @@ export default function TabRendimiento({ rendimiento, ordenZonas, ordenBase, sit
           <> Diferencia de aptitud: {ganancia_fitness > 0 ? "+" : ""}{f4(ganancia_fitness)}.</>
         )}
       </p>
+
+      {ag.calidad_sexo != null && (
+        <div className="card" style={{ marginTop: 20 }}>
+          <div className="card-title">Cuál proporción sexual persigue el AG</div>
+          <p style={{ fontSize: 12, color: "var(--text2)", lineHeight: 1.7, margin: 0 }}>
+            La <strong>agregada de la cohorte</strong>: hembras sobre el total de
+            crías, pesado por el tamaño de cada nidada. Es lo que se libera al
+            mar, y a la población le da igual que cada nido acierte el{" "}
+            {f1(ag.objetivo_pct_hembras)} % si el conjunto sale equilibrado.
+          </p>
+          <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.7, margin: "10px 0 0" }}>
+            Antes la aptitud optimizaba otra cifra —el promedio de la calidad
+            nido por nido— mientras la interfaz mostraba la agregada, sin que
+            nada dijera cuál perseguía el algoritmo. El argumento para la de por
+            nido era el gradiente: la agregada es un solo número para toda la
+            colocación y mover un nido la cambia 0.015 puntos sobre 170 nidos.
+            Se midió si eso importaba en el resultado, con cinco pesos entre las
+            dos: el rango completo fue 0.005 y 0.007 en dos escenarios, sin
+            tendencia, o sea ruido entre repeticiones. Así que la aptitud
+            persigue ahora exactamente la cifra que esta tabla reporta, sin
+            coeficientes de modelado que no se puedan justificar.
+            {ag.calidad_sexo_por_nido != null && (
+              <> La medida por nido, sólo para comparar:{" "}
+              <code>{f4(ag.calidad_sexo_por_nido)}</code>.</>
+            )}
+          </p>
+        </div>
+      )}
 
       <RepartoYSupuestos ordenZonas={ordenZonas} ordenBase={ordenBase} sitio={sitio}
         ordenFijo={ordenFijo} ordenMotivo={ordenMotivo} />

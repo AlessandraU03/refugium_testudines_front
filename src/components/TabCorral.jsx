@@ -86,7 +86,64 @@ function Tortuga({ x, y, r, fill, stroke, borde = 1.2, especie = "golfina", opac
   );
 }
 
-export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = [], malla = null }) {
+// Cuánto enfría la malla y cuánto el riego, para un nido.
+//
+// Los tres números suman la temperatura final por construcción: el modelo se
+// corre descubierto y sin regar como referencia, y cada intervención es lo que
+// resta respecto a ella.
+function Desglose({ s }) {
+  const total = (s.delta_malla_c || 0) + (s.delta_riego_c || 0);
+  const esc = (v) => (total === 0 ? 0 : Math.abs(v) / Math.abs(total) * 100);
+  const barra = (color, v) => (
+    <div style={{ height: 8, borderRadius: 4, background: color,
+      width: `${esc(v)}%`, minWidth: v ? 2 : 0 }} />
+  );
+  return (
+    <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--border)" }}>
+      <div style={{ fontSize: 11, color: "var(--text3)", marginBottom: 10 }}>
+        De dónde sale su temperatura
+      </div>
+      <div style={{ display: "grid", gap: 8, fontSize: 12,
+        fontFamily: "var(--font-mono)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <span style={{ color: "var(--text2)" }}>Arena descubierta y sin regar</span>
+          <strong>{s.temp_sin_intervenir_c} °C</strong>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 60px",
+          alignItems: "center", gap: 10 }}>
+          <span style={{ color: "var(--text2)" }}>Malla sombra</span>
+          {barra("var(--text3)", s.delta_malla_c)}
+          <strong style={{ textAlign: "right" }}>{s.delta_malla_c} °C</strong>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 60px",
+          alignItems: "center", gap: 10 }}>
+          <span style={{ color: "var(--text2)" }}>
+            Riego {s.riego ? "" : "(no alcanza a este nido)"}
+          </span>
+          {barra("rgba(56,189,248,0.8)", s.delta_riego_c)}
+          <strong style={{ textAlign: "right" }}>{s.delta_riego_c} °C</strong>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between",
+          paddingTop: 8, borderTop: "1px solid var(--border)" }}>
+          <span>Temperatura del PTS</span>
+          <strong style={{ color: "var(--accent)" }}>
+            {s.temp_estimada_pts} °C
+          </strong>
+        </div>
+      </div>
+      {Math.abs(s.delta_riego_c || 0) > Math.abs(s.delta_malla_c || 0) && (
+        <p style={{ fontSize: 11, color: "var(--warn)", lineHeight: 1.6,
+          margin: "10px 0 0" }}>
+          A este nido lo salva el <strong>agua</strong>, no la malla: es de los
+          que hay que seguir regando.
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = [],
+                                   malla = null, riego = null, riegoActivo = false }) {
   const [zoom, setZoom] = useState(1.6);
   const [hover, setHover] = useState(null);
   const [seleccionado, setSeleccionado] = useState(null);
@@ -299,6 +356,27 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
                 <text x={sx(malla.xmin) + 6} y={sy(malla.ymax) + 16}
                   fill="var(--text3)" fontSize={11} fontFamily="var(--font-mono)">
                   malla sombra (cubre el corral; el sol entra por los lados)
+                </text>
+              </g>
+            )}
+
+            {/* Región regada (csv/sitio.csv). Es la SEGUNDA intervención del
+                corral y la única que se paga cada temporada, así que tiene que
+                verse: un nido dentro de ella está a salvo por el agua, no por
+                la malla, y dejar de regarlo lo pone en riesgo.
+                A diferencia de la sombra no depende del sol: se aplica o no. */}
+            {riego && riegoActivo && (
+              <g pointerEvents="none">
+                <rect
+                  x={sx(riego.xmin)} y={sy(riego.ymin)}
+                  width={sx(riego.xmax) - sx(riego.xmin)}
+                  height={sy(riego.ymax) - sy(riego.ymin)}
+                  fill="rgba(56,189,248,0.07)" stroke="rgba(56,189,248,0.55)"
+                  strokeWidth={1.5} strokeDasharray="7 5"
+                />
+                <text x={sx(riego.xmin) + 6} y={sy(riego.ymin) + 16}
+                  fill="rgba(56,189,248,0.9)" fontSize={11} fontFamily="var(--font-mono)">
+                  zona de riego
                 </text>
               </g>
             )}
@@ -554,6 +632,15 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
               </div>
             )}
           </div>
+
+          {/* De dónde sale la temperatura de ESTE nido: qué parte la quitó la
+              malla y qué parte el riego. Sin este desglose el número aparecía
+              sin explicación, y es justo lo que decide la recomendación
+              económica: si un nido está a salvo por la malla, regarlo no
+              compra nada; si lo está por el agua, dejar de regar lo condena. */}
+          {seleccionado.proporcion_sexual?.delta_malla_c != null && (
+            <Desglose s={seleccionado.proporcion_sexual} />
+          )}
         </div>
       )}
     </div>

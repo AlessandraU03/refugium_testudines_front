@@ -111,16 +111,29 @@ export default function TabPTS({ mejor, fechas = [], validacion = [], rendimient
           fontFamily: "var(--font-mono)", background: "var(--bg3)",
           padding: "10px 14px", borderRadius: 6,
         }}>
-          posición → sombra de la malla → temperatura del PTS → ecuación de Girondot → sexo
+          posición → sombra de la malla → <span style={{ color: "rgba(56,189,248,0.95)" }}>riego</span> → profundidad → temperatura del PTS → ecuación de Girondot → sexo
         </p>
         <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.7, margin: "10px 0 0" }}>
           La sombra de cada nido se calcula siguiendo la trayectoria del sol de
           ese día según la latitud del sitio, la orientación del corral y la
           altura de la malla. El enfriamiento que produce sale de las
           mediciones de Hill et al. (2015): 2.2 °C a 45 cm de profundidad y
-          1.3 °C a 75 cm. La proporción sexual usa la ecuación de Girondot con
+          1.3 °C a 75 cm.{" "}
+          <strong style={{ color: "rgba(56,189,248,0.95)" }}>El riego es la
+          segunda intervención</strong> y viene de las mismas mediciones, con su
+          curva de dosis: 100 mm dan 1.8 °C a 45 cm y llegar a 721 mm sólo suma
+          0.6 °C más. A diferencia de la sombra no depende del sol —se aplica o
+          no se aplica sobre la arena—, y es la única de las dos que se paga
+          cada temporada. La proporción sexual usa la ecuación de Girondot con
           la temperatura pivote propia de cada especie. El límite letal de
           {" "}{LIMITE_LETAL} °C corresponde a la tolerancia térmica del embrión.
+        </p>
+        <p style={{ fontSize: 11, color: "var(--text3)", lineHeight: 1.7, margin: "8px 0 0" }}>
+          En el diagrama del corral, cada nido trae el desglose de su propia
+          temperatura: cuántos grados le quitó la malla y cuántos el agua. Ahí
+          se ve cuáles nidos están a salvo por la sombra y cuáles dependen del
+          riego, que es la información que necesita la pestaña de
+          recomendación.
         </p>
       </div>
 
