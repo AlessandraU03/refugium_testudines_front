@@ -12,7 +12,7 @@ export default function PanelEntradas({
     n_laud:    "5",
     fecha:     today,
     largo_m:   "30",
-    ancho_m:   "8",
+    ancho_m:   "40",
   });
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -24,7 +24,7 @@ export default function PanelEntradas({
       n_laud:    Math.max(0, parseInt(form.n_laud)    || 0),
       fecha:     form.fecha,
       largo_m:   Math.max(1, parseFloat(form.largo_m) || 30),
-      ancho_m:   Math.max(1, parseFloat(form.ancho_m) || 8),
+      ancho_m:   Math.max(1, parseFloat(form.ancho_m) || 40),
     });
   };
 

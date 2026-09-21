@@ -102,12 +102,25 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
   const N_FILAS = Math.max(1, Math.ceil(ANCHO / CELDA));
   const sector  = (x, y) => obtenerSectorFisico(x, y, CELDA, N_COLS, N_FILAS);
 
-  const VW = 1000;
-  const VH = Math.round((ANCHO / LARGO) * VW);
+  // Escala ÚNICA para los dos ejes, y el lado mayor del corral es el que fija
+  // el tamaño del dibujo.
+  //
+  // Antes el viewBox era siempre 1000 de ancho y la altura salía de la
+  // proporción, con el relleno restado después: eso hacía que un centímetro
+  // midiera distinto a lo largo que a lo ancho. Con el corral de 30 × 8 m la
+  // diferencia era pequeña; con uno de 30 × 40 m las tortugas salían ovaladas
+  // y un metro de separación se veía más corto en un eje que en el otro.
+  //
+  // Tomar el lado mayor evita además que un corral más ancho que largo se
+  // dibuje como una tira vertical de tres pantallas de alto.
   const PAD = 50;
+  const DIBUJO = 900;                             // lado mayor del área útil
+  const escala = DIBUJO / Math.max(LARGO, ANCHO); // unidades de viewBox por cm
+  const VW = Math.round(LARGO * escala) + 2 * PAD;
+  const VH = Math.round(ANCHO * escala) + 2 * PAD;
 
-  const sx = (cm) => PAD + (cm / LARGO) * (VW - 2 * PAD);
-  const sy = (cm) => PAD + (cm / ANCHO) * (VH - 2 * PAD);
+  const sx = (cm) => PAD + cm * escala;
+  const sy = (cm) => PAD + cm * escala;
 
   // Tamaño del ícono EN CENTÍMETROS DE TERRENO, no en píxeles fijos.
   //
@@ -116,7 +129,6 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
   // nidos separados un metro se veían encimados aunque no lo estuvieran.
   // Atado a la escala, una tortuga siempre mide lo mismo sobre la arena: unos
   // 30 cm de radio, menos de la mitad de la separación mínima de la norma.
-  const escala = (VW - 2 * PAD) / LARGO;          // unidades por cm
   const rNido = Math.max(2.5, 30 * escala);       // 30 cm de radio real
 
   const jornadasPrevias = {};
@@ -231,7 +243,10 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
           </span>
         </div>
 
-        <div style={{ overflowX: "auto", background: "var(--bg3)" }}>
+        {/* Desplazamiento en LOS DOS ejes y alto acotado: un corral más ancho
+            que largo se dibuja alto, y sin este tope empujaba el resto de la
+            pestaña fuera de la pantalla en lugar de dejarse recorrer. */}
+        <div style={{ overflow: "auto", maxHeight: "78vh", background: "var(--bg3)" }}>
           <svg viewBox={`0 0 ${VW} ${VH + 20}`} width={`${100 * zoom}%`}
             style={{ display: "block", minWidth: 600 * zoom }}>
             {/* Fondo general */}
