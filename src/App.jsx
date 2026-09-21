@@ -10,6 +10,7 @@ import TabClustering from "./components/TabClustering";
 import TabTemporada from "./components/TabTemporada";
 import TabPTS from "./components/TabPTS";
 import TabRendimiento from "./components/TabRendimiento";
+import TabRecomendacion from "./components/TabRecomendacion";
 import turtleLogo from "./turtle_logo.png";
 import "./App.css";
 
@@ -29,6 +30,7 @@ const TABS = [
   { id: "temporada",   label: "Estado Corral"      },
   { id: "clustering",  label: "Densidad del Corral" },
   { id: "pts",         label: "Proporción Sexual"  },
+  { id: "recomendacion", label: "Recomendación"    },
   { id: "validacion",  label: "Validación"         },
   { id: "fechas",      label: "Fechas Eclosión"    },
   { id: "variables",   label: "Variables V1–V3"    },
@@ -291,6 +293,12 @@ export default function App() {
                       <p className="empty-sub">Ejecuta el AG para ver el progreso generacional.</p>
                     </div>
                   )
+                )}
+
+                {/* Tab: Recomendación — qué conviene hacer con presupuesto limitado.
+                    No necesita que el AG se haya ejecutado. */}
+                {tabActiva === "recomendacion" && (
+                  <TabRecomendacion corral={resultado?.corral || temporada?.corral} />
                 )}
 
                 {/* Tab: Rendimiento — qué aportó el AG frente a sembrar sin algoritmo */}
