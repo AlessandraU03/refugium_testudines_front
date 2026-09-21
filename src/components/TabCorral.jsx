@@ -283,7 +283,7 @@ export default function TabCorral({ mejor, zonas = [], corral, nidosPrevios = []
                 />
                 <text x={sx(malla.xmin) + 6} y={sy(malla.ymax) + 16}
                   fill="var(--text3)" fontSize={11} fontFamily="var(--font-mono)">
-                  malla sombra (cobertura supuesta)
+                  malla sombra (cubre el corral; el sol entra por los lados)
                 </text>
               </g>
             )}
