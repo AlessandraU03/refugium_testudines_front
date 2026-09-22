@@ -10,7 +10,7 @@ import TabVariables from "./components/TabVariables";
 import TabClustering from "./components/TabClustering";
 import TabTemporada from "./components/TabTemporada";
 import TabPTS from "./components/TabPTS";
-import TabRendimiento from "./components/TabRendimiento";
+import TarjetaReparto from "./components/TarjetaReparto";
 import TabRecomendacion from "./components/TabRecomendacion";
 import turtleLogo from "./turtle_logo.png";
 import "./App.css";
@@ -23,9 +23,17 @@ const API_URL = window.location.hostname === "localhost" || window.location.host
 // El orden importa: primero lo que produce el AG, después el contexto del
 // corral. Las pestañas de Capacidad y Recomendación se eliminaron porque
 // desplazaban al algoritmo del centro del sistema.
+//
+// "Rendimiento del AG" se quitó después: comparaba la colocación contra el
+// llenado secuencial, pero la tabla no se leía. Mostraba al AG perdiendo en
+// calidad de proporción sexual (0.8421 contra 0.8428) y ganando en aptitud
+// (0.8425 contra 0.8012) sin mostrar el término que explica las dos cosas: el
+// cumplimiento de separación, 1.00 contra 0.96. Los números siguen en la
+// respuesta de la API (`rendimiento`), que es de donde salen para el protocolo,
+// y el reparto de franjas y la lista de supuestos se movieron a TarjetaReparto,
+// junto al diagrama del corral.
 const TABS = [
   { id: "corral",      label: "Diagrama Corral"    },
-  { id: "rendimiento", label: "Rendimiento del AG" },
   { id: "evolucion",   label: "Evolución Aptitud"  },
   { id: "top3",        label: "Top 3 Individuos"   },
   { id: "temporada",   label: "Estado Corral"      },
@@ -265,6 +273,12 @@ export default function App() {
                   resultado ? (
                     <>
                       <TarjetaCupo cupo={resultado.cupo} />
+                      <TarjetaReparto
+                        ordenZonas={resultado.orden_zonas}
+                        sitio={resultado.sitio}
+                        ordenFijo={resultado.orden_fijo}
+                        ordenMotivo={resultado.orden_motivo}
+                      />
                       <TabCorral
                         mejor={resultado.mejor}
                         zonas={resultado.zonas}
@@ -305,26 +319,6 @@ export default function App() {
                     No necesita que el AG se haya ejecutado. */}
                 {tabActiva === "recomendacion" && (
                   <TabRecomendacion corral={resultado?.corral || temporada?.corral} />
-                )}
-
-                {/* Tab: Rendimiento — qué aportó el AG frente a sembrar sin algoritmo */}
-                {tabActiva === "rendimiento" && (
-                  resultado?.rendimiento ? (
-                    <TabRendimiento
-                      rendimiento={resultado.rendimiento}
-                      ordenZonas={resultado.orden_zonas}
-                      ordenBase={resultado.orden_base}
-                      sitio={resultado.sitio}
-                      ordenFijo={resultado.orden_fijo}
-                      ordenMotivo={resultado.orden_motivo}
-                    />
-                  ) : (
-                    <div className="empty-state">
-                      <div className="empty-icon">🐢</div>
-                      <p>Optimización inactiva</p>
-                      <p className="empty-sub">Ejecuta el AG para comparar su colocación contra el llenado secuencial que se hace hoy en el corral.</p>
-                    </div>
-                  )
                 )}
 
                 {/* Tab: Monitoreo PTS (Período Termosensible) */}
