@@ -97,17 +97,27 @@ export default function App() {
       const res = await fetch(`${API_URL}/api/guardar-jornada`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
+        // Se guardan los nidos ADMITIDOS de cada especie (no los pedidos), el
+        // reparto de franjas que eligió el AG y las medidas del corral con que
+        // se calculó. Antes iban 0 nidos de prieta y laúd y ningún reparto, y
+        // el Estado del Corral dibujaba otro corral.
         body: JSON.stringify({
-          fecha:     inputsAG.fecha,
-          n_golfina: inputsAG.n_golfina,
-          n_prieta:  0,
-          n_laud:    0,
-          mejor:     resultado.mejor,
+          fecha:       inputsAG.fecha,
+          n_golfina:   resultado.n_golfina,
+          n_prieta:    resultado.n_prieta,
+          n_laud:      resultado.n_laud,
+          orden_zonas: resultado.orden_zonas,
+          largo_m:     inputsAG.largo_m,
+          ancho_m:     inputsAG.ancho_m,
+          mejor:       resultado.mejor,
         }),
       });
       if (res.ok) {
         setGuardado(true);
         cargarTemporada();
+      } else {
+        const json = await res.json().catch(() => ({}));
+        setError(json.error || "No se pudo guardar la jornada.");
       }
     } catch (_) {
       setError("No se pudo guardar la jornada.");
@@ -115,7 +125,14 @@ export default function App() {
   }, [resultado, inputsAG, cargarTemporada]);
 
   const handleNuevaTemporada = useCallback(async () => {
-    await fetch(`${API_URL}/api/nueva-temporada`, { method: "POST" });
+    // Borra todas las jornadas guardadas: se pide confirmación para que un
+    // clic accidental no deje el corral sin registro.
+    if (!window.confirm("¿Borrar todas las jornadas de la temporada? Esta acción no se puede deshacer.")) return;
+    await fetch(`${API_URL}/api/nueva-temporada`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ confirmar: true }),
+    });
     setResultado(null);
     setGuardado(false);
     cargarTemporada();
@@ -129,7 +146,7 @@ export default function App() {
         <div className="header-inner">
           <img src={turtleLogo} alt="Refugium Logo" className="logo-img" />
           <div>
-            <h1 className="header-title">Refugium Testudinis</h1>
+            <h1 className="header-title">Refugium Testudines</h1>
           </div>
           
           <button 
