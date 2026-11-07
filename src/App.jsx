@@ -335,7 +335,8 @@ export default function App() {
                 {/* Tab: Recomendación — qué conviene hacer con presupuesto limitado.
                     No necesita que el AG se haya ejecutado. */}
                 {tabActiva === "recomendacion" && (
-                  <TabRecomendacion corral={resultado?.corral || temporada?.corral} />
+                  <TabRecomendacion corral={resultado?.corral || temporada?.corral}
+                                    fecha={resultado ? inputsAG?.fecha : undefined} />
                 )}
 
                 {/* Tab: Monitoreo PTS (Período Termosensible) */}

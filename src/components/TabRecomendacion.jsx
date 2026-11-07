@@ -18,8 +18,12 @@ const API_URL =
 const MESES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
   "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-export default function TabRecomendacion({ corral }) {
-  const [mes, setMes] = useState(new Date().getMonth() + 1);
+export default function TabRecomendacion({ corral, fecha }) {
+  // Arranca en el mes de la jornada calculada, no en el de hoy: si no, la
+  // recomendación describe otro mes que el resto de las pestañas. Sin jornada,
+  // el mes actual. La fecha se lee como texto (AAAA-MM-DD) para que la zona
+  // horaria no la recorra al mes anterior.
+  const [mes, setMes] = useState(Number(fecha?.slice(5, 7)) || new Date().getMonth() + 1);
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState(null);
   const [cargando, setCargando] = useState(false);
